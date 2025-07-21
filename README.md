@@ -94,7 +94,7 @@ Each module contributes 5 or 6 metrics to the BARCODE analysis. They are describ
 
 ## Output Files
 The BARCODE program can save multiple outputs.
-- **Summary:** At the base level, the BARCODE program outputs the 
+- **Summary:** At the base level, the BARCODE program outputs the CSV file representing the 17 metrics.
 - **Summary Barcode:** The BARCODE program can also output a visual representation of the data metrics described in the Summary file above. This is done by normalizing the metric values using default limits, and then plotted using the Matplotlib color map "Plasma". These visualizations are separated by channel for ease of visualization.
 - **Summary Graphs:** The program can also output graphs for visualization of the analysis performed by the modules. The resilience module provides a graph plotting the change in void size over the video, while the coarsening module provides a histogram of the pixel intensities of the specified frames, as well as a plot of the difference between the first and final frames. The flow module outputs up to 3 flow fields, representing the first, middle, and last flow fields computed with optical flow.
 - **Intermediate Data Structures:** The program will also output the intermediate data structures used to perform the analysis. This would be the binarized frames of the video for the resilience module, the flow fields for the flow module, and the intensity distributions for the coarsening module. All three of these are saved in CSV file format, and are comparatively small, with the largest files being at most 1-10 MB.
