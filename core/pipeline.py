@@ -178,20 +178,15 @@ def process_multiple_files(
     """
     Process a list of files and return collected results.
     """
-
-    print("HELLOOOOO")
-
     all_results = []
     total_files = len(files_to_process)
     file_itr = 1
 
     for file_path in files_to_process:
-        print("hi")
         try:
             results, file_itr = process_single_file(
                 file_path, config, ff_loc, file_itr, total_files
             )
-            print("RESULTS")
         except TypeError as e:
             if "BARCODE" in str(e):
                 continue
