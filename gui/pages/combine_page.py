@@ -123,6 +123,7 @@ def create_combine_page(parent, switch_page):
         # Convert GUI configs to pure data configs
         config = gui_config.config
         input_config = gui_input_config.config
+        input_config.mode = "agg"
         aggregation_config = gui_aggregation_config.config
 
         worker = create_processing_worker(config, input_config, aggregation_config)
