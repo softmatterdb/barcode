@@ -47,36 +47,28 @@ except ImportError:
 #     raise ValueError("Only TIFF and ND2 formats supported.")
 
 def read_all_frames(file_path, channel):
-    print(f"[DEBUG] Reading file: {file_path}, channel: {channel}")
     ext = file_path.lower().split(".")[-1]
-    print(f"[DEBUG] File extension: {ext}")
 
     if ext in ["tif", "tiff"] and tifffile:
         img = tifffile.imread(file_path)
-        print(f"[DEBUG] TIFF image shape: {img.shape}")
         if img.ndim == 3:
             temp = [img[i] for i in range(img.shape[0])]
-            print(len(temp))
             return temp
         elif img.ndim == 4:
             total_channels = img.shape[3]
-            print(f"[DEBUG] Total channels in TIFF: {total_channels}")
             while channel < 0:
                 channel += total_channels
             channel = min(channel, total_channels - 1)
             return [img[i, :, :, channel] for i in range(img.shape[0])]
         else:
-            print("[DEBUG] Unusual TIFF shape, returning single image")
             return [img]
 
     elif ext == "nd2":
         with nd2.ND2File(file_path) as ndfile:
             file = ndfile.asarray()
-            print(f"[DEBUG] ND2 raw shape: {file.shape}, sizes: {ndfile.sizes}")
             if len(ndfile.sizes) not in [3, 4] or "T" not in ndfile.sizes or "Z" in ndfile.sizes:
                 raise ValueError("Unsupported ND2 format for preview")
             img = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
-            print(f"[DEBUG] Swapped ND2 shape: {img.shape}")
             if len(ndfile.sizes) == 3:
                 return [img[i] for i in range(img.shape[0])]
             total_channels = img.shape[3]
