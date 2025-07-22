@@ -71,19 +71,22 @@
 
 
 import os
+from typing import Tuple, TypeAlias
 
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.ticker as ticker
 
-from analysis.flow import calculate_optical_flow
+from analysis.flow import calculate_optical_flow, calculate_frame_pairs
 
 import tkinter as tk
 from tkinter import ttk
 
 from gui.config import BarcodeConfigGUI, InputConfigGUI, PreviewConfigGUI
-from utils.preview_flow import load_first_frame
+from utils.preview_flow import read_all_frames
 
+FramePair: TypeAlias = Tuple[int, int]
 
 def create_flow_frame(
         parent, 
@@ -223,11 +226,13 @@ def create_flow_frame(
 
     # Preview functionality
     # Preview functionality
-    preview_data = {"frame": None}
+    all_data = {"frames": []}
 
     def update_preview(*args):
-        img = preview_data["frame"]
-        if img is None:
+        frames = all_data["frames"]
+        
+        if frames is None:
+            print("THERE ARE NOT FRAMES")
             preview_label.grid()
             ax_flow.clear()
             ax_flow.set_facecolor(bg_color)
@@ -240,35 +245,46 @@ def create_flow_frame(
 
         preview_label.grid_remove()
 
-        # Set scale factor
-        h, w = img.shape
-        max_px = 300
-        scale = max(1, int(max(h, w) / max_px) + 1)
+        # first_frame = frames[0]
 
-        # Show down-sampled original
+        # # Set scale factor
+        # h, w = first_frame.shape
+        # max_px = 300
+        # scale = max(1, int(max(h, w) / max_px) + 1)
 
-        # Show down-sampled binarized
-        if img.ndim == 3 and img.shape[0] >= 2:
-            images = img  # shape: (frames, height, width)
-            frame_pair = (0, 1)
-        else:
-            # If only one frame, duplicate it (no flow, but avoids crash)
-            images = np.stack([img, img])
-            frame_pair = (0, 1)
+        opt_config = co.config
+        first_pair = (0, opt_config.frame_step)
+        # print(opt_config)
 
-        opt_config = co.config  # Get OpticalFlowConfig from GUI
+        # if first_frame.ndim == 3 and first_frame.shape[0] >= 2:
+        #     images = first_frame  # shape: (frames, height, width)
+        #     # frame_pairs = calculate_frame_pairs(len(images), opt_config.frame_step)
+        #     first_pair = (0, opt_config.frame_step)
+        #     print(first_pair)
+        # else:
+        #     images = np.stack([first_frame, first_frame])
+        #     # frame_pairs = calculate_frame_pairs(len(images), opt_config.frame_step)
+        #     # first_pair = frame_pairs[0]
+        #     first_pair = (0, opt_config.frame_step)
+        #     print(first_pair)
+
+        def visualize_optical_flow(ax, fig, canvas, flow_output):
+            downU, downV, directions, speed = flow_output
+            
+            ax.clear()
+            ax.quiver(downU, downV, color="blue")
+            ticks_adj = ticker.FuncFormatter(lambda x, pos: f"{x * opt_config.downsample_factor:g}")
+            ax.xaxis.set_major_formatter(ticks_adj)
+            ax.yaxis.set_major_formatter(ticks_adj)
+            ax.set_aspect(aspect=1, adjustable="box")
+            fig_flow.tight_layout()
+            canvas_flow.draw()
+
 
         try:
             # print("hi")
-            flow_output, flow_stats = calculate_optical_flow(images, frame_pair, opt_config)
-            downU, downV, directions, speed = flow_output
-            # Downsample for preview
-            small_dir = directions[::scale, ::scale]
-            ax_flow.clear()
-            ax_flow.imshow(small_dir, cmap="hsv", interpolation="nearest")
-            ax_flow.axis("off")
-            fig_flow.tight_layout()
-            canvas_flow.draw()
+            flow_output, flow_stats = calculate_optical_flow(frames, first_pair, opt_config)
+            visualize_optical_flow(ax_flow, fig_flow, canvas_flow, flow_output)
         except Exception as e:
             preview_label.grid()
             ax_flow.clear()
@@ -280,32 +296,64 @@ def create_flow_frame(
             )        
    
 
-    def load_preview_frame(*args):
-        # Load first frame of selected file
+    # def load_all_frames(*args):
+    #     # Load first frame of selected file
+    #     if ci.mode.get() == "dir":
+    #         dir_path = ci.dir_path.get()
+    #         sample = cp.sample_file.get()
+    #         if not dir_path or not sample:
+    #             preview_data["frame"] = None
+    #             update_preview()
+    #             return
+    #         path = os.path.join(dir_path, sample)
+    #     else:
+    #         path = ci.file_path.get()
+    #     if not path:
+    #         preview_data["frame"] = None
+    #         update_preview()
+    #         return
+    #     try:
+    #         if config.channels.parse_all_channels.get():
+    #             channel = 0
+    #         else:
+    #             channel = config.channels.selected_channel.get()
+    #             preview_data["frame"] = load_first_frame(path, channel)
+    #     except Exception as e:
+    #         print(path)
+    #         print(f"[Preview] couldn't load first frame: {e}")
+    #         preview_data["frame"] = None
+    #     update_preview()
+
+    def load_all_frames(*args):
+        # access from outer closure or global
         if ci.mode.get() == "dir":
             dir_path = ci.dir_path.get()
             sample = cp.sample_file.get()
             if not dir_path or not sample:
-                preview_data["frame"] = None
+                all_data["frames"] = []
                 update_preview()
                 return
             path = os.path.join(dir_path, sample)
         else:
             path = ci.file_path.get()
+
         if not path:
-            preview_data["frame"] = None
+            all_data["frames"] = []
             update_preview()
             return
+
         try:
             if config.channels.parse_all_channels.get():
                 channel = 0
             else:
                 channel = config.channels.selected_channel.get()
-                preview_data["frame"] = load_first_frame(path, channel)
+
+            all_data["frames"] = read_all_frames(path, channel)  # delegate to core logic
+            # print("frames: ", frames)
         except Exception as e:
-            print(path)
-            print(f"[Preview] couldn't load first frame: {e}")
-            preview_data["frame"] = None
+            print(f"[Preview] couldn't load all frames: {e}")
+            all_data["frames"] = []
+
         update_preview()
 
     def update_sample_file_options(*args):
@@ -335,10 +383,10 @@ def create_flow_frame(
     row_f += 1
 
     # Wire up events
-    ci.file_path.trace_add("write", load_preview_frame)
-    cp.sample_file.trace_add("write", load_preview_frame)
-    config.channels.selected_channel.trace_add("write", load_preview_frame)
-    config.channels.parse_all_channels.trace_add("write", load_preview_frame)
+    ci.file_path.trace_add("write", load_all_frames)
+    cp.sample_file.trace_add("write", load_all_frames)
+    config.channels.selected_channel.trace_add("write", load_all_frames)
+    config.channels.parse_all_channels.trace_add("write", load_all_frames)
     co.frame_step.trace_add("write", update_preview)
     co.window_size.trace_add("write", update_preview)
     co.downsample_factor.trace_add("write", update_preview)
