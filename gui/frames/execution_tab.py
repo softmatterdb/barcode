@@ -44,30 +44,6 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
 
     header = ("TkDefaultFont", 15, "bold")
 
-    # Process File
-    # tk.Radiobutton(
-    #     frame,
-    #     text="Process File",
-    #     variable=ci.mode,
-    #     value="file",
-    #     command=on_mode_change,
-    # ).grid(row=row_idx, column=0, sticky="w", padx=5, pady=2)
-
-    # # file_entry = tk.Entry(frame, textvariable=ci.file_path, width=20)
-    # # file_entry.grid(row=row_idx, column=1, padx=5, pady=2)
-
-    # # browse_file_btn = tk.Button(frame, text="Browse File…", command=browse_file)
-    # # browse_file_btn.grid(row=row_idx, column=2, sticky="w", padx=5)
-
-    # file_frame = tk.Frame(frame)
-    # file_frame.grid(row=row_idx, column=1, columnspan=2, sticky="w", padx=5, pady=2)
-
-    # file_entry = tk.Entry(file_frame, textvariable=ci.file_path, width=20)
-    # file_entry.pack(side="left", fill="x", expand=True)
-
-    # browse_file_btn = tk.Button(file_frame, text="Browse File…", command=browse_file)
-    # browse_file_btn.pack(side="left", padx=(5, 0))
-
     tk.Label(frame, text="Select Data", font=header).grid(
         row=row_idx, column=0, columnspan=3, sticky="w", padx=(5, 5), pady=(10, 5)
     )
@@ -93,22 +69,6 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
 
     row_idx += 1
 
-    # # Process Directory
-    # tk.Radiobutton(
-    #     frame,
-    #     text="Process Directory",
-    #     variable=ci.mode,
-    #     value="dir",
-    #     command=on_mode_change,
-    # ).grid(row=row_idx, column=0, sticky="w", padx=5, pady=2)
-
-    # dir_entry = tk.Entry(frame, textvariable=ci.dir_path, width=20)
-    # dir_entry.grid(row=row_idx, column=1, padx=5, pady=2)
-
-    # browse_folder_btn = tk.Button(frame, text="Browse Folder…", command=browse_folder)
-    # browse_folder_btn.grid(row=row_idx, sticky="w", column=2, padx=5)
-    # row_idx += 1
-
     dir_frame = tk.Frame(frame)
     dir_frame.grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=2)
 
@@ -133,19 +93,6 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
         row=row_idx, column=0, columnspan=3, sticky="w", padx=(5, 5), pady=(10, 5)
     )
     row_idx += 1
-
-    
-
-
-    # # Combine CSVs mode
-    # tk.Radiobutton(
-    #     frame,
-    #     text="Combine CSV files / Generate Barcodes",
-    #     variable=ci.mode,
-    #     value="agg",
-    #     command=on_mode_change,
-    # ).grid(row=row_idx, column=0, columnspan=2, sticky="w", padx=5, pady=5)
-    # row_idx += 1
 
     # Channel selection
     tk.Label(frame, text="Choose Channel (-3 to 4):").grid(
@@ -227,14 +174,6 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
         row=row_idx + 1, column=0, sticky="w", padx=(120, 5) 
     )
 
-    # # Options
-    # _create_dim_section(
-    #     frame,
-    #     row_idx,
-    #     cq.accept_dim_images,
-    #     "Scan dim files ",
-    #     "that may be difficult to accurately profile",
-    # )
     row_idx += 2
 
     tk.Checkbutton(frame, variable=cq.accept_dim_channels).grid(row=row_idx + 1, column=0, sticky="w", padx=5)
@@ -300,52 +239,6 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
     )
     row_idx += 1
 
-    # _create_dim_section(
-    #     frame,
-    #     row_idx,
-    #     cq.accept_dim_channels,
-    #     "Scan dim channels ",
-    #     "that may be difficult to accurately profile",
-    # )
-    # row_idx += 2
-
-    # _create_option_section(frame, row_idx, "Verbose", co.verbose, "Show more details")
-    # row_idx += 2
-
-    # _create_option_section(
-    #     frame,
-    #     row_idx,
-    #     "Save Graphs",
-    #     co.save_graphs,
-    #     "Click to save graphs representing sample changes",
-    # )
-    # row_idx += 2
-
-    # _create_option_section(
-    #     frame,
-    #     row_idx,
-    #     "Save Reduced Data Structures",
-    #     co.save_intermediates,
-    #     "Click to save reduced data structures (flow fields, binarized images, intensity distributions) for further analysis",
-    # )
-    # row_idx += 2
-
-    # _create_option_section(
-    #     frame,
-    #     row_idx,
-    #     "Dataset Barcode",
-    #     co.generate_dataset_barcode,
-    #     "Generates an aggregate barcode for the dataset",
-    # )
-    # row_idx += 2
-
-    # Configuration file
-
-    
-    # tk.Label(frame, text="Configuration YAML File:").grid(
-    #     row=row_idx, column=0, sticky="w", padx=5, pady=2
-    # )
-
     config_frame = tk.Frame(frame)
     config_frame.grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=2)
 
@@ -365,11 +258,7 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
 
     config_file_btn = tk.Button(config_frame, text="Browse YAML…", command=browse_config_file)
     config_file_btn.pack(side="left")
-
-    # tk.Button(frame, text="Browse YAML…", command=browse_config_file).grid(
-    #     row=row_idx, column=2, sticky="w", padx=5
-    # )
-
+    
     return frame
 
 
