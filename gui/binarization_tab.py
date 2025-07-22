@@ -8,8 +8,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.config import PreviewConfigGUI, InputConfigGUI, BarcodeConfigGUI
-from .preview_binarization import load_first_frame, binarize
-
+from .preview_binarization import load_first_frame, binarize,group_avg
+from skimage import io, color, filters, measure, morphology
 
 def create_binarization_frame(
     parent,
@@ -77,7 +77,58 @@ def create_binarization_frame(
         lbl = tk.Label(scale_frame, text=f"{val:.2f}")
         lbl.grid(row=1, column=i + 1, sticky="n")
     row_b += 1
+######
+    tk.Label(frame, text="Smallest area Threshold:").grid(
+        row=row_b, column=0, sticky="w", padx=5, pady=5
+    )
 
+
+    scale_frame2 = tk.Frame(frame)
+    scale_frame2.columnconfigure(0, weight=0)
+    for c in range(1, 10):
+        scale_frame2.columnconfigure(c, weight=1)
+    scale_frame2.columnconfigure(10, weight=0)
+    scale_frame2.grid(row=row_b, column=1, padx=5, pady=5, sticky="ew")
+
+    r_offset_scale2 = tk.Scale(
+        scale_frame2,
+        from_=0,
+        to=1000,
+        resolution=1,
+        orient="horizontal",
+        variable=cb.area_size,
+        length=300,
+        showvalue=True,
+    )
+    r_offset_scale2.grid(row=0, column=1, columnspan=9, sticky="ew")
+
+    decrease_btn2 = tk.Button(
+        scale_frame2,
+        text="◀",
+        width=2,
+        command=lambda: cb.area_size.set(
+            max(cb.area_size.get() - 10, 0)
+        ),
+    )
+    decrease_btn2.grid(row=0, column=0, padx=(0, 2), pady=(15, 0))
+
+    increase_btn2 = tk.Button(
+        scale_frame2,
+        text="▶",
+        width=2,
+        command=lambda: cb.area_size.set(
+            min(cb.area_size.get() + 10, 1000)
+        ),
+    )
+    increase_btn2.grid(row=0, column=10, padx=(2, 0), pady=(15, 0))
+
+    # Tick marks
+    #tick_values = [i*200 for i in range(6)]
+    #for i, val in enumerate(tick_values):
+    #    lbl = tk.Label(scale_frame2, text=f"{val:d}")
+    #    lbl.grid(row=1, column=i + 1, sticky="n")
+    row_b += 1
+######
     # Sample file selection
     tk.Label(frame, text="Choose image from folder for preview:").grid(
         row=row_b, column=0, sticky="w", padx=5, pady=5
@@ -91,7 +142,7 @@ def create_binarization_frame(
     # Live preview setup
     preview_title = tk.Label(frame, text="Dynamic preview of first-frame binarization:")
     preview_title.grid(
-        row=row_b, column=0, columnspan=2, padx=5, pady=(10, 2), sticky="w"
+        row=row_b, column=0, columnspan=3, padx=5, pady=(10, 2), sticky="w"
     )
     row_b += 1
 
@@ -102,6 +153,9 @@ def create_binarization_frame(
     tk.Label(frame, text="Binarized").grid(
         row=row_b, column=1, padx=5, pady=2, sticky="n"
     )
+    tk.Label(frame, text="Filtered").grid(
+        row=row_b, column=2, padx=5, pady=2, sticky="n"
+    )
     row_b += 1
 
     # Get background color for matplotlib figures
@@ -109,7 +163,6 @@ def create_binarization_frame(
     bg_name = root.cget("bg")
     r, g, b = root.winfo_rgb(bg_name)
     bg_color = (r / 65535, g / 65535, b / 65535)
-
     # Original image figure
     fig_orig = Figure(figsize=(3, 3), facecolor=bg_color)
     ax_orig = fig_orig.add_subplot(111)
@@ -134,12 +187,25 @@ def create_binarization_frame(
     ax_bin.imshow(np.zeros((10, 10)), cmap="gray")
     fig_bin.tight_layout()
 
+    # Filtered image figure
+    fig_filt = Figure(figsize=(3, 3), facecolor=bg_color)
+    ax_filt = fig_filt.add_subplot(111)
+    ax_filt.set_facecolor(bg_color)
+    ax_filt.axis("off")
+
+    canvas_filt = FigureCanvasTkAgg(fig_filt, master=frame)
+    canvas_filt.draw()
+    canvas_filt.get_tk_widget().grid(row=row_b, column=2, padx=5, pady=(10, 5))
+    ax_filt.imshow(np.zeros((10, 10)), cmap="gray")
+    fig_filt.tight_layout()
+
+
     preview_label = tk.Label(
         frame,
         text="Upload file to see binarization threshold preview.",
         compound="center",
     )
-    preview_label.grid(row=row_b, column=0, columnspan=2, padx=5, pady=(10, 5))
+    preview_label.grid(row=row_b, column=0, columnspan=3, padx=5, pady=(10, 5))
     row_b += 1
 
     # Preview functionality
@@ -156,6 +222,10 @@ def create_binarization_frame(
             ax_bin.set_facecolor(bg_color)
             ax_bin.axis("off")
             canvas_bin.draw()
+            ax_filt.clear()
+            ax_filt.set_facecolor(bg_color)
+            ax_filt.axis("off")
+            canvas_filt.draw()
             preview_label.config(
                 image="", text="Upload file to see binarization threshold preview."
             )
@@ -163,7 +233,11 @@ def create_binarization_frame(
 
         preview_label.grid_remove()
 
-        # Set scale factor
+        
+        # bin the image and set scale factor
+        binning_number=cb.binning_number.get()
+        img=group_avg(img, binning_number)
+         
         h, w = img.shape
         max_px = 300
         scale = max(1, int(max(h, w) / max_px) + 1)
@@ -185,6 +259,17 @@ def create_binarization_frame(
         ax_bin.axis("off")
         fig_bin.tight_layout()
         canvas_bin.draw()
+
+        # Show filtered image
+        offset = cb.area_size.get()
+        #offset=100
+        filt_arr = morphology.remove_small_objects((bin_arr>0), min_size=offset)
+        small_filt = filt_arr[::scale, ::scale]
+        ax_filt.clear()
+        ax_filt.imshow(small_filt, cmap="gray", interpolation="nearest")
+        ax_filt.axis("off")
+        fig_filt.tight_layout()
+        canvas_filt.draw()
 
     def load_preview_frame(*args):
         # Load first frame of selected file
@@ -238,12 +323,15 @@ def create_binarization_frame(
     config.channels.selected_channel.trace_add("write", load_preview_frame)
     config.channels.parse_all_channels.trace_add("write", load_preview_frame)
     cb.threshold_offset.trace_add("write", update_preview)
+    cb.area_size.trace_add("write", update_preview)
+    cb.binning_number.trace_add("write", update_preview)
     ci.dir_path.trace_add("write", update_sample_file_options)
 
     # Initialize preview
     load_preview_frame()
 
     # Other binarization settings
+
     tk.Label(frame, text="Frame Step (res_f_step) [min=1]:").grid(
         row=row_b, column=0, sticky="w", padx=5, pady=5
     )
@@ -281,5 +369,26 @@ def create_binarization_frame(
         width=7,
     )
     pf_stop_spin.grid(row=row_b, column=1, padx=5, pady=5)
+    row_b += 1
+
+    tk.Label(frame, text="Binning Factor:").grid(
+        row=row_b, column=0, sticky="w", padx=5, pady=5
+    )
+
+    binning_choices = [2, 4, 8]
+
+
+
+    binning_menu = ttk.Combobox(
+        frame,
+        textvariable=cb.binning_number,
+        values=binning_choices,
+        width=5,
+        state="readonly"  # force selection from list
+    )
+    binning_menu.grid(row=row_b, column=1, padx=5, pady=5)
+
+
+
 
     return frame

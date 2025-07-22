@@ -170,12 +170,16 @@ class BinarizationConfigGUI:
     frame_step: tk.IntVar = field(init=False)
     frame_start_percent: tk.DoubleVar = field(init=False)
     frame_stop_percent: tk.DoubleVar = field(init=False)
+    binning_number: tk.IntVar = field(init=False)
+    area_size: tk.IntVar = field(init=False)
 
     def __post_init__(self):
         self.threshold_offset = tk.DoubleVar(value=self._core_config.threshold_offset)
         self.frame_step = tk.IntVar(value=self._core_config.frame_step)
         self.frame_start_percent = tk.DoubleVar(value=self._core_config.frame_start_percent)
         self.frame_stop_percent = tk.DoubleVar(value=self._core_config.frame_stop_percent)
+        self.binning_number = tk.IntVar(value=self._core_config.binning_number)
+        self.area_size = tk.IntVar(value=self._core_config.area_size)
 
     @property
     def config(self) -> BinarizationConfig:
@@ -185,6 +189,8 @@ class BinarizationConfigGUI:
             frame_step=self.frame_step.get(),
             frame_start_percent=self.frame_start_percent.get(),
             frame_stop_percent=self.frame_stop_percent.get(),
+            binning_number=self.binning_number.get(),
+            area_size=self.area_size.get(),
         )
 
     def update_gui(self, new_config: BinarizationConfig):
@@ -194,6 +200,8 @@ class BinarizationConfigGUI:
         self.frame_step.set(new_config.frame_step)
         self.frame_start_percent.set(new_config.frame_start_percent)
         self.frame_stop_percent.set(new_config.frame_stop_percent)
+        self.binning_number.set(new_config.binning_number)
+        self.area_size.set(new_config.area_size)
 
 @dataclass
 class OpticalFlowConfigGUI:
@@ -205,6 +213,7 @@ class OpticalFlowConfigGUI:
     downsample_factor: tk.IntVar = field(init=False)
     nm_pixel_ratio: tk.DoubleVar = field(init=False)
     frame_interval_s: tk.IntVar = field(init=False)
+    binning_number: tk.IntVar = field(init=False)
 
     def __post_init__(self):
         self.frame_step = tk.IntVar(value=self._core_config.frame_step)
@@ -212,6 +221,7 @@ class OpticalFlowConfigGUI:
         self.downsample_factor = tk.IntVar(value=self._core_config.downsample_factor)
         self.nm_pixel_ratio = tk.DoubleVar(value=self._core_config.nm_pixel_ratio)
         self.frame_interval_s = tk.IntVar(value=self._core_config.frame_interval_s)
+        self.binning_number = tk.IntVar(value=self._core_config.binning_number)
 
     @property
     def config(self) -> OpticalFlowConfig:
@@ -222,6 +232,7 @@ class OpticalFlowConfigGUI:
             downsample_factor=self.downsample_factor.get(),
             nm_pixel_ratio=self.nm_pixel_ratio.get(),
             frame_interval_s=self.frame_interval_s.get(),
+            binning_number=self.binning_number.get(),
         )
 
     def update_gui(self, new_config: OpticalFlowConfig):
@@ -232,6 +243,7 @@ class OpticalFlowConfigGUI:
         self.downsample_factor.set(new_config.downsample_factor)
         self.nm_pixel_ratio.set(new_config.nm_pixel_ratio)
         self.frame_interval_s.set(new_config.frame_interval_s)
+        self.binning_number.set(new_config.binning_number)
 
 @dataclass
 class IntensityDistributionConfigGUI:

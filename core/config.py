@@ -100,6 +100,8 @@ class BinarizationConfig(BaseConfig):
     frame_step: int = 10  # 1 to 100
     frame_start_percent: float = 0.9  # 0.5 to 0.9
     frame_stop_percent: float = 1.0  # 0.9 to 1.0
+    binning_number: int = 2 # 2, 4, 8 as the default
+    area_size: int = 500 #default area size TO BE ADJUSTED BY USER ONCE WE FIGURE THIS OUT!
 
 
 @dataclass
@@ -111,6 +113,7 @@ class OpticalFlowConfig(BaseConfig):
     downsample_factor: int = 8  # 1 to 1000
     nm_pixel_ratio: float = 1.0  # 1 to 1,000,000
     frame_interval_s: int = 1  # 1 to 1000
+    binning_number: int = 2 # 2, 4, 8 as the default
 
 
 @dataclass

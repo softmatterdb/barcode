@@ -10,15 +10,12 @@ def inv(arr: np.ndarray) -> np.ndarray:
     return ones_arr - arr
 
 
-def group_avg(arr: np.ndarray, N: int, bin_mask: bool = False) -> np.ndarray:
+def group_avg(arr: np.ndarray, N: int) -> np.ndarray:
     """Downsample 2D array by averaging over N x N blocks."""
     result = np.cumsum(arr, 0)[N - 1 :: N] / float(N)
     result = np.cumsum(result, 1)[:, N - 1 :: N] / float(N)
     result[1:] = result[1:] - result[:-1]
     result[:, 1:] = result[:, 1:] - result[:, :-1]
-
-    if bin_mask:
-        result = np.where(result > 0, 1, 0)
     return result
 
 

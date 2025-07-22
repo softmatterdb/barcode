@@ -163,7 +163,7 @@ def main():
         config = gui_config.config
         input_config = gui_input_config.config
         aggregation_config = gui_aggregation_config.config
-
+        
         worker = create_processing_worker(config, input_config, aggregation_config)
         threading.Thread(target=worker, daemon=True).start()
 

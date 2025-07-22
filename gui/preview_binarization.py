@@ -6,7 +6,7 @@ from matplotlib.widgets import Slider
 import numpy as np
 import nd2
 
-from utils.analysis import binarize
+from utils.analysis import binarize,group_avg
 
 try:
     import tifffile
