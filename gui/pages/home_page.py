@@ -14,7 +14,7 @@ def create_home_page(parent, switch_page):
     process_button = ttk.Button(content, text="Process Data", command=lambda: switch_page("process"))
     process_button.pack(pady=5)
 
-    combine_button = ttk.Button(content, text="Combine Barcodes")
+    combine_button = ttk.Button(content, text="Combine Barcodes", command=lambda: switch_page("combine"))
     combine_button.pack(pady=5)
 
     return frame

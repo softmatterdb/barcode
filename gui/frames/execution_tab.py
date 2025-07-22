@@ -282,6 +282,19 @@ def create_execution_frame(parent, config: BarcodeConfigGUI, input_config: Input
 
     row_idx += 2
 
+    tk.Checkbutton(frame, variable=co.generate_dataset_barcode).grid(row=row_idx + 1, column=0, sticky="w", padx=5)
+    tk.Label(frame, text="Generates an ", font=normal).grid(
+        row=row_idx + 1, column=0, sticky="w", padx=(25, 5)
+    )
+    tk.Label(frame, text="aggregate barcode ", font=bold).grid(
+        row=row_idx + 1, column=0, sticky="w", padx=(110, 5) 
+    )
+    tk.Label(frame, text="for the dataset", font=normal).grid(
+        row=row_idx + 1, column=0, sticky="w", padx=(240, 5) 
+    )
+
+    row_idx += 2
+
     tk.Label(frame, text="Configuration Settings", font=header).grid(
         row=row_idx, column=0, columnspan=3, sticky="w", padx=(5, 5), pady=(10, 5)
     )

@@ -9,7 +9,7 @@ from gui.frames.execution_tab import create_execution_frame
 from gui.frames.binarization_tab import create_binarization_frame
 from gui.frames.flow_tab import create_flow_frame
 from gui.frames.intensity_tab import create_intensity_frame
-# from gui.frames.barcode_tab import create_barcode_frame
+from gui.frames.barcode_tab import create_barcode_frame
 
 from core import BarcodeConfig, InputConfig, PreviewConfig, AggregationConfig
 
@@ -27,17 +27,8 @@ def create_tabs(parent, config, input_config, preview_config, aggregation_config
     notebook = ttk.Notebook(parent, takefocus=0)
     notebook.pack(fill="both", expand=True)
 
-    execution_frame = create_execution_frame(notebook, config, input_config)
-    binarization_frame = create_binarization_frame(notebook, config, preview_config, input_config)
-    flow_frame = create_flow_frame(notebook, config)
-    intensity_frame = create_intensity_frame(notebook, config)
-    # barcode_frame = create_barcode_frame(notebook, config, aggregation_config)
-
-    notebook.add(execution_frame, text="Execution Settings")
-    notebook.add(binarization_frame, text="Binarization Settings")
-    notebook.add(flow_frame, text="Optical Flow Settings")
-    notebook.add(intensity_frame, text="Intensity Distribution Settings")
-    # notebook.add(barcode_frame, text="Barcode Generator + CSV Aggregator")
+    barcode_frame = create_barcode_frame(notebook, config, aggregation_config)
+    notebook.add(barcode_frame, text="Barcode Generator & CSV Aggregator")
 
     return notebook
 
@@ -48,12 +39,12 @@ def create_processing_worker(
 ):
     """Create the worker function for processing in background thread"""
 
-    # if input_config.configuration_file:
-    #     try:
-    #         config = BarcodeConfig.load_from_yaml(input_config.configuration_file)
-    #     except Exception as e:
-    #         messagebox.showerror("Error reading config file", str(e))
-    #         return
+    if input_config.configuration_file:
+        try:
+            config = BarcodeConfig.load_from_yaml(input_config.configuration_file)
+        except Exception as e:
+            messagebox.showerror("Error reading config file", str(e))
+            return
 
     def worker():
         try:
@@ -117,7 +108,7 @@ def create_processing_worker(
 
     return worker
 
-def create_process_page(parent, switch_page):
+def create_combine_page(parent, switch_page):
     frame = tk.Frame(parent)
     frame.pack(fill="both", expand=True)
 
@@ -129,20 +120,10 @@ def create_process_page(parent, switch_page):
     def on_run():
         setup_log_window(parent)
 
-        # force the value manually to see if that fixes it
-        gui_input_config.mode.set("dir")
-
         # Convert GUI configs to pure data configs
         config = gui_config.config
         input_config = gui_input_config.config
         aggregation_config = gui_aggregation_config.config
-
-        # print("== RUNNING TEST ==")
-        # print("mode:", gui_input_config.mode.get())
-        # print("file path:", gui_input_config.file_path.get())
-        # print("dir path:", gui_input_config.dir_path.get())
-        # print("parse all channels:", gui_config.channels.parse_all_channels.get())
-        # print("===================")
 
         worker = create_processing_worker(config, input_config, aggregation_config)
         threading.Thread(target=worker, daemon=True).start()
@@ -158,7 +139,7 @@ def create_process_page(parent, switch_page):
         gui_aggregation_config,
     )
 
-    run_button = ttk.Button(frame, text="Process Data", command=on_run)
+    run_button = ttk.Button(frame, text="Combine Barcodes", command=on_run)
     run_button.pack(pady=10)
 
     return frame

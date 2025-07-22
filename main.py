@@ -7,6 +7,7 @@ import tkinter as ttk
 # import GUI pages directly
 from gui.pages.home_page import create_home_page
 from gui.pages.process_page import create_process_page
+from gui.pages.combine_page import create_combine_page
 
 # optional: if setup_main_window is in another file, import directly
 from gui.window import setup_main_window  # or wherever it lives
@@ -211,7 +212,7 @@ def main():
 
     # set window size
     window_width = 1000
-    window_height = 750
+    window_height = 800
 
     # get screen dimensions
     screen_width = root.winfo_screenwidth()
@@ -232,6 +233,8 @@ def main():
             create_home_page(root, switch_page)
         elif page_name == "process":
             create_process_page(root, switch_page)
+        elif page_name == "combine":
+            create_combine_page(root, switch_page)
 
     # load home page by default
     create_home_page(root, switch_page)
