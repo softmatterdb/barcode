@@ -11,6 +11,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from gui.config import PreviewConfigGUI, InputConfigGUI, BarcodeConfigGUI
 from utils.preview_binarization import load_first_frame, binarize
 
+from core import BinarizationConfig
+
 def create_binarization_frame(
     parent,
     config: BarcodeConfigGUI,
@@ -26,6 +28,42 @@ def create_binarization_frame(
     ci = input_config
 
     row_b = 0
+
+    # Checkbox to input the size of the image
+    window_size_enabled = tk.BooleanVar(value=False)
+    # window_size_var = tk.IntVar(value=15)
+
+    def toggle_window_size_entry():
+        if window_size_enabled.get():
+            window_size_entry.config(state="normal")
+            cb.window_size_enabled.set(True)
+        else: 
+            window_size_entry.config(state="disabled")
+            cb.window_size_enabled.set(False)
+    
+    # Checkbox
+    window_size_checkbox = tk.Checkbutton(
+        frame,
+        text="Enable custom window size (um/pixel):",
+        variable=window_size_enabled,
+        command=toggle_window_size_entry,
+    )
+    window_size_checkbox.grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+
+    #Spinbox 
+    window_size_entry = ttk.Spinbox(
+        frame,
+        increment=0.01,
+        textvariable=cb.window_size_var,
+        width=7,
+        state="disabled"
+    )
+
+    window_size_entry.grid(row=row_b, column=1, padx=5, pady=5)
+
+    # print(BinarizationConfig.window_size_entry)
+
+    row_b += 1
 
     # Binarization Threshold with scale
     tk.Label(frame, text="Binarization Threshold:").grid(

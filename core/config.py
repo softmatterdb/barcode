@@ -100,6 +100,8 @@ class BinarizationConfig(BaseConfig):
     frame_step: int = 10  # 1 to 100
     frame_start_percent: float = 0.9  # 0.5 to 0.9
     frame_stop_percent: float = 1.0  # 0.9 to 1.0
+    window_size_var: float = 15
+    window_size_enabled: bool = False
 
 
 @dataclass

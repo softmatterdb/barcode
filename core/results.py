@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 
 from core import Metrics, Units
+from core.config import BinarizationConfig
 
 
 @dataclass
@@ -64,14 +65,25 @@ class BinarizationResults(ResultsBase):
 
     @classmethod
     def get_units(cls) -> List[Units]:
-        return [
-            Units.PERCENT_FRAMES,
-            Units.PERCENT_FOV,
-            Units.PERCENT_FOV,
-            Units.PERCENT_CHANGE,
-            Units.PERCENT_CHANGE,
-            Units.PERCENT_FOV,
-            Units.PERCENT_FOV,
+        if(BinarizationConfig.window_size_enabled):
+            return [
+                Units.PERCENT_FRAMES,
+                Units.AREA,
+                Units.AREA,
+                Units.PERCENT_CHANGE,
+                Units.PERCENT_CHANGE,
+                Units.AREA,
+                Units.AREA,
+            ] 
+        else:
+            return [
+                Units.PERCENT_FRAMES,
+                Units.PERCENT_FOV,
+                Units.PERCENT_FOV,
+                Units.PERCENT_CHANGE,
+                Units.PERCENT_CHANGE,
+                Units.PERCENT_FOV,
+                Units.PERCENT_FOV,
         ]
 
     def get_data(self) -> List[float]:

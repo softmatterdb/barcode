@@ -54,7 +54,12 @@ def check_span(frame):
     return check_connected(frame, axis=0) or check_connected(frame, axis=1)
 
 
-def find_largest_void(frame: np.ndarray, find_void: bool, num: int = 1):
+def find_largest_void(frame: np.ndarray, bin_config: BinarizationConfig, find_void: bool, num: int = 1):
+
+    window_size_set = bin_config.window_size_enabled
+    window_size = bin_config.window_size_var
+
+    print(window_size)
 
     eval_frame = inv(frame) if find_void else frame
 
@@ -74,6 +79,12 @@ def find_largest_void(frame: np.ndarray, find_void: bool, num: int = 1):
     areas = [region.area for region in largest_regions]
     if num != len(areas):
         areas.append(0)
+
+    if(window_size_set):
+        print(frame.shape[0])
+        areas = [a *(window_size**2)*(frame.shape[0]*2)*(frame.shape[1]*2) for a in areas]
+        print("hi")
+    
     return areas  # Returns largest region(s) area
 
 
@@ -103,14 +114,14 @@ def write_binarization_data(csvwriter, frame_data: np.ndarray, frame_idx: int):
     csvwriter.writerow([])
 
 
-def analyze_binarized_frame(frame: np.ndarray) -> FrameMetrics:
+def analyze_binarized_frame(frame: np.ndarray, bin_config: BinarizationConfig) -> FrameMetrics:
     """Analyze a single binarized frame and return metrics."""
     # Calculate all metrics for this frame
-    island_area = find_largest_void(frame, find_void=False)[0]
-    island_area_2nd = find_largest_void(frame, find_void=False, num=2)[1]
+    island_area = find_largest_void(frame, bin_config, find_void=False)[0]
+    island_area_2nd = find_largest_void(frame, bin_config, find_void=False, num=2)[1]
     island_position = largest_island_position(frame)
     is_connected = check_span(frame)
-    void_area = find_largest_void(frame, find_void=True)[0]
+    void_area = find_largest_void(frame, bin_config, find_void=True)[0]
 
     # Get region data
     labeled_frame, num_labels = label(frame, connectivity=2, return_num=True)
@@ -188,7 +199,7 @@ def track_void(
         downsampled_frame = group_avg(binarized_frame, 2, bin_mask=True)
 
         # Analyze frame metrics
-        metrics = analyze_binarized_frame(downsampled_frame)
+        metrics = analyze_binarized_frame(downsampled_frame, bin_config)
 
         # Save visualization if this is a key frame
         if frame_idx in save_frames:

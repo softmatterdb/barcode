@@ -171,12 +171,16 @@ class BinarizationConfigGUI:
     frame_step: tk.IntVar = field(init=False)
     frame_start_percent: tk.DoubleVar = field(init=False)
     frame_stop_percent: tk.DoubleVar = field(init=False)
+    window_size_var: tk.DoubleVar = field(init=False)
+    window_size_enabled: tk.BooleanVar = field(init=False)
 
     def __post_init__(self):
         self.threshold_offset = tk.DoubleVar(value=self._core_config.threshold_offset)
         self.frame_step = tk.IntVar(value=self._core_config.frame_step)
         self.frame_start_percent = tk.DoubleVar(value=self._core_config.frame_start_percent)
         self.frame_stop_percent = tk.DoubleVar(value=self._core_config.frame_stop_percent)
+        self.window_size_var = tk.DoubleVar(value=self._core_config.window_size_var)
+        self.window_size_enabled = tk.BooleanVar(value=self._core_config.window_size_enabled)
 
     @property
     def config(self) -> BinarizationConfig:
@@ -186,6 +190,8 @@ class BinarizationConfigGUI:
             frame_step=self.frame_step.get(),
             frame_start_percent=self.frame_start_percent.get(),
             frame_stop_percent=self.frame_stop_percent.get(),
+            window_size_var=self.window_size_var.get(),
+            window_size_enabled=self.window_size_enabled.get(),
         )
 
     def update_gui(self, new_config: BinarizationConfig):
@@ -195,6 +201,8 @@ class BinarizationConfigGUI:
         self.frame_step.set(new_config.frame_step)
         self.frame_start_percent.set(new_config.frame_start_percent)
         self.frame_stop_percent.set(new_config.frame_stop_percent)
+        self.window_size_var.set(new_config.window_size_var)
+        self.window_size_enabled.set(new_config.window_size_enabled)
 
 @dataclass
 class OpticalFlowConfigGUI:
