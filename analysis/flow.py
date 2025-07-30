@@ -15,6 +15,7 @@ FlowStats: TypeAlias = Tuple[float, float, float]
 
 def calculate_frame_pairs(num_frames: int, frame_step: int) -> List[FramePair]:
     """Calculate frame pairs for optical flow analysis."""
+    print(frame_step)
     end_frame = (int(num_frames / frame_step) - 1) * frame_step
     while end_frame <= 0:
         frame_step = int(np.ceil(frame_step / 5))
@@ -28,6 +29,8 @@ def calculate_frame_pairs(num_frames: int, frame_step: int) -> List[FramePair]:
         end = start + frame_step
         end = min(end, num_frames - 1)
         frame_pairs.append((start, end))
+
+        print("start: ", start, " end: ", end)
 
     if end_frame != num_frames - 1:
         frame_pairs.append((end_frame, num_frames - 1))
