@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore")
 
 def write_file(output_filepath, data):
     headers = [
-        'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
+        'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
@@ -21,19 +21,11 @@ def write_file(output_filepath, data):
             csvwriter.writerow(headers) # Write headers before the first filename
             headers = [] # Ensures headers are only written once per file
             for entry in data:
-                if isinstance(entry, list) and len(entry) == 1:
-                    # Write the file name
-                    csvwriter.writerow(entry)
-                    # csvwriter.writerow(headers)  # Write headers after the filename
-                elif entry:
-                    csvwriter.writerow(entry)
-                else:
-                    # Write an empty row
-                    csvwriter.writerow([])
+                csvwriter.writerow(entry)
 
 def generate_aggregate_csv(filelist, csv_loc, gen_barcode, sort = None, separate_channel = False):
     headers = [
-        'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
+        'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
@@ -47,7 +39,7 @@ def generate_aggregate_csv(filelist, csv_loc, gen_barcode, sort = None, separate
             with open(csv_loc, 'w', encoding="utf-8", newline="\n") as f:
                 csv_writer = csv.writer(f)
                 csv_writer.writerow(headers)
-        num_params = len(headers)
+        num_params = len(headers) - 1
         filenames = []
         csv_data = np.zeros(shape=(num_params))
         if not csv_list:
@@ -59,37 +51,18 @@ def generate_aggregate_csv(filelist, csv_loc, gen_barcode, sort = None, separate
                     csv_writer = csv.writer(fwrite)
                     next(csv_reader, None)
                     for row in csv_reader:
-                        if len(row) == 1:
-                            filenames.append(str(row))
-                        elif len(row) == 0:
-                            row = []
-                        else:
-                            if row.count(None) == len(row) - 1:
-                                row = row[0]
-                                filenames.append(str(row))
-                            else:
-                                if row.count("") == len(row) - 1:
-                                    filenames.append(str(row[0]))
-                                row = [float(val) if val != '' else np.nan for val in row]
-                                arr_row = np.array(row)
-                                csv_data = np.vstack((csv_data, arr_row))
                         csv_writer.writerow(row)
+                        row = [float(val) if val != '' else np.nan for val in row[1:]]
+                        arr_row = np.array(row)
+                        csv_data = np.vstack((csv_data, arr_row))
             else:
                 with open(csv_file, 'r', newline='\n') as fread:
                     csv_reader = csv.reader(fread)
                     next(csv_reader, None)
                     for row in csv_reader:
-                        if len(row) == 1:
-                            filenames.append(str(row))
-                        elif len(row) == 0:
-                            row = []
-                        else:
-                            if row.count("") == len(row) - 1:
-                                filenames.append(str(row[0]))
-                            else:
-                                row = [float(val) if val != '' else np.nan for val in row]
-                                arr_row = np.array(row)
-                                csv_data = np.vstack((csv_data, arr_row))
+                        row = [float(val) if val != '' else np.nan for val in row[1:]]
+                        arr_row = np.array(row)
+                        csv_data = np.vstack((csv_data, arr_row))
         return csv_data
     
     if len(filelist) == 1 and filelist[0] == csv_loc:
@@ -126,9 +99,9 @@ def gen_combined_barcode(data, figpath, sort = None, separate = True):
         elif metric in directional_metrics:
             output_metric = metric + "\n(rads)"
         elif metric == speed_metric:
-            output_metric = metric + "\n(nm/s)"
+            output_metric = metric + "\n($\\mu$m/s)"
         elif metric == acceleration_metric:
-            output_metric = metric + "\n(nm/s)"
+            output_metric = metric + "\n($\\mu$m/s)"
         elif metric == percent_frames:
             output_metric = metric + "\n(% of Frames)"
         return output_metric

@@ -2,138 +2,87 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv, os, functools, builtins
 from scipy.stats import mode, kurtosis
+from utils import average_largest, calc_mode, median_skewness, mode_skewness, calc_frame_metric, find_analysis_frames
 
-def calc_mode(frame):
-    mode_result = mode(frame.flatten(), keepdims=False)
-    mode_intensity = mode_result.mode if isinstance(mode_result.mode, np.ndarray) else np.array([mode_result.mode])
-    mode_intensity = mode_intensity[0] if mode_intensity.size > 0 else np.nan
-    return mode_intensity
-
-def calc_mode_skewness(frame):
-    mean_intensity = np.mean(frame)
-    mode_intensity = calc_mode(frame)
-    stdev_intensity = np.std(frame)
-    return (mean_intensity - mode_intensity)/stdev_intensity
-
-def calc_median_skewness(frame):
-    mean_intensity = np.mean(frame)
-    median_intensity = np.median(frame)
-    stdev_intensity = np.std(frame)
-    return 3 * (mean_intensity - median_intensity)/stdev_intensity
-
-def top_ten_average(lst):
-    lst.sort(reverse=True)
-    length = len(lst)
-    top_ten_percent = int(np.ceil(length * 0.1))
-    return np.mean(lst[0:top_ten_percent])
-
-def calc_frame_metric(metric, data):
-    mets = []
-    for i in range(len(data)):
-        met = metric(data[i].flatten())
-        mets.append(met)
-    return mets
-
-def check_coarse(file, name, channel, first_frame, last_frame, frames_percent, save_intermediates, verbose):
+def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, save_visualization, save_rds, verbose):
     flag = 0 # No flags have been tripped by the module
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None
-    vprint('Beginning Coarsening Testing')
+    vprint('Beginning Intensity Distribution Analysis')
 
-    im = file[:,:,:,channel]
+    image = file[:,:,:,channel]
+    if (image == 0).all(): # If image is blank, then end program early
+        return None, [np.nan] * 6, 1
 
-    num_frames = im.shape[0]
-    num_frames_analysis = int(np.ceil(frames_percent * num_frames))
-
-    # Set last_frame to last frame of movie if unspecified
+    frame_indices = find_analysis_frames(image, step_size)[0]
+    num_frames_analysis = int(np.ceil(frame_eval_percent * len(frame_indices)))
+    frames_data = [image[i] for i in frame_indices]
+    i_frames_data = frames_data[:num_frames_analysis]
+    f_frames_data = frames_data[-num_frames_analysis:]
 
     fig, ax = plt.subplots(figsize=(5,5))
 
-    if (im == 0).all(): # If image is blank, then end program early
-        return None, [np.nan] * 6, 1
-    
-    max_px_intensity = 1.1*np.max(im)
-    bins_width = 3
-
-    if first_frame + num_frames_analysis >= num_frames:
-        first_frame = 0
-    if last_frame + num_frames - num_frames_analysis < 0:
-        last_frame = 0
-    
-    i_frames_data = [im[i] for i in range(first_frame, first_frame + num_frames_analysis, 1)]
-    f_frames_data = [im[i] for i in range(last_frame - num_frames_analysis, last_frame, 1)]
-
     # Check for saturation, posts saturation flag (flag = 2) if mode and maximal intensity values are same
-    if all([np.max(frame) == calc_mode(frame) for frame in i_frames_data + f_frames_data]):
-        flag == 2
+    flag == 2 if all([np.max(frame) == calc_mode(frame) for frame in frames_data]) else 0
 
-    if save_intermediates:
+    if save_rds:
         filename = os.path.join(name, 'IntensityDistribution.csv')
         with open(filename, "w") as myfile:
             csvwriter = csv.writer(myfile)
-            for frame_idx in range(0, num_frames_analysis, 1):
-                csvwriter.writerow(['Frame ' + str(frame_idx)])
-                frame_data = im[frame_idx]
+            for frame_idx in frame_indices:
+                csvwriter.writerow([f'Frame {frame_idx}'])
+                frame_data = image[frame_idx]
                 frame_values, frame_counts = np.unique(frame_data, return_counts = True)
                 csvwriter.writerow(frame_values)
                 csvwriter.writerow(frame_counts)
                 csvwriter.writerow([])
-
-            for frame_idx in range(last_frame, last_frame - num_frames_analysis, -1):
-                frame_idx_adjusted = num_frames + frame_idx if frame_idx < 0 else frame_idx
-                csvwriter.writerow(['Frame ' + str(frame_idx_adjusted)])
-                frame_data = im[frame_idx]
-                frame_values, frame_counts = np.unique(frame_data, return_counts = True)
-                csvwriter.writerow(frame_values)
-                csvwriter.writerow(frame_counts)
-                csvwriter.writerow([])
-    
-    # Use the calc_frame_metric function to get the kurtosis, skew, and asymmetry for each of the first and last 10% of frames
+                    
     i_kurt = calc_frame_metric(kurtosis, i_frames_data)
     f_kurt = calc_frame_metric(kurtosis, f_frames_data)
-    tot_kurt = i_kurt + f_kurt
-    i_median_skew = calc_frame_metric(calc_median_skewness, i_frames_data)
-    f_median_skew = calc_frame_metric(calc_median_skewness, f_frames_data)
-    tot_median_skew = i_median_skew + f_median_skew
-    i_mode_skew = calc_frame_metric(calc_mode_skewness, i_frames_data)
-    f_mode_skew = calc_frame_metric(calc_mode_skewness, f_frames_data)
-    tot_mode_skew = i_mode_skew + f_mode_skew
+    tot_kurt = calc_frame_metric(kurtosis, frames_data)
+
+    i_median_skew = calc_frame_metric(median_skewness, i_frames_data)
+    f_median_skew = calc_frame_metric(median_skewness, f_frames_data)
+    tot_median_skew = calc_frame_metric(median_skewness, frames_data)
+
+    i_mode_skew = calc_frame_metric(mode_skewness, i_frames_data)
+    f_mode_skew = calc_frame_metric(mode_skewness, f_frames_data)
+    tot_mode_skew = calc_frame_metric(mode_skewness, frames_data)
 
     # Take the largest ten percent of each metric and average them
-    max_kurt = top_ten_average(tot_kurt)
-    max_median_skew = top_ten_average(tot_median_skew)
-    max_mode_skew = top_ten_average(tot_mode_skew)
+    max_kurt = average_largest(tot_kurt)
+    max_median_skew = average_largest(tot_median_skew)
+    max_mode_skew = average_largest(tot_mode_skew)
 
     # Take the difference of the average between the first and last 10% of frames
     kurt_diff = np.mean(np.array(f_kurt)) - np.mean(np.array(i_kurt))
     median_skew_diff = np.mean(np.array(f_median_skew)) - np.mean(np.array(i_median_skew))
     mode_skew_diff = np.mean(np.array(f_mode_skew)) - np.mean(np.array(i_mode_skew))
 
-    # Plot the intensity distributions for the first and last frame for comparison
-    i_frame = im[first_frame]
-    f_frame = im[last_frame] if (last_frame != False and last_frame < len(im)) else im[-1]
-    
-    fig, ax = plt.subplots(figsize=(5,5))
-    set_bins = np.arange(0, max_px_intensity, bins_width)
-    i_count, bins = np.histogram(i_frame.flatten(), bins=set_bins, density=True)
-    f_count, bins = np.histogram(f_frame.flatten(), bins=set_bins, density=True)
-    center_bins = (bins[1] - bins[0])/2
-    plt_bins = bins[0:-1] + center_bins
-        
-    i_mean = np.mean(i_frame)
-    f_mean = np.mean(f_frame)
+    if save_visualization:
+        # Plot the intensity distributions for the first and last frame for comparison
+        i_frame = image[0]
+        f_frame = image[-1]
+        max_px_intensity = 1.1*np.max(image)
+        bins_width = 3        
+        set_bins = np.arange(0, max_px_intensity, bins_width)
+        i_count, bins = np.histogram(i_frame.flatten(), bins=set_bins, density=True)
+        f_count, bins = np.histogram(f_frame.flatten(), bins=set_bins, density=True)
+        center_bins = (bins[1] - bins[0])/2
+        plt_bins = bins[0:-1] + center_bins
+            
+        i_mean = np.mean(i_frame)
+        f_mean = np.mean(f_frame)
 
-    final_frame = len(im) - 1 if last_frame == False else last_frame
-    
-    ax.plot(plt_bins[::10], i_count[::10], '^-', ms=4, c='darkred', alpha=0.6, label= "Frame " + str(first_frame)+" Intensity Distribution")
-    ax.plot(plt_bins[::10], f_count[::10], 'v-', ms=4, c='purple',   alpha=0.6, label= "Frame " + str(final_frame)+" Intensity Distribution")
-    ax.axvline(x=i_mean, ms = 4, c = 'darkred', alpha=1, label="Frame " + str(first_frame)+" Mean")
-    ax.axvline(x=f_mean, ms = 4, c = 'purple', alpha=1, label="Frame " + str(final_frame)+" Mean")
-    ax.axhline(0, color='dimgray', alpha=0.6)
-    ax.set_xlabel("Pixel intensity value")
-    ax.set_ylabel("Probability")
-    ax.set_yscale('log')
-    ax.set_xlim(0,max_px_intensity)
-    ax.legend()
+        ax.plot(plt_bins[::10], i_count[::10], '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
+        ax.plot(plt_bins[::10], f_count[::10], 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
+        ax.axvline(x=i_mean, ms = 4, c = 'darkred', alpha=1, label="Frame 0 Mean")
+        ax.axvline(x=f_mean, ms = 4, c = 'purple', alpha=1, label=f"Frame {len(image) - 1} Mean")
+        ax.axhline(0, color='dimgray', alpha=0.6)
+        ax.set_xlabel("Pixel intensity value")
+        ax.set_ylabel("Probability")
+        ax.set_yscale('log')
+        ax.set_xlim(0,max_px_intensity)
+        ax.legend()
 
     return fig, [max_kurt, max_median_skew, max_mode_skew, kurt_diff, median_skew_diff, mode_skew_diff], flag

@@ -25,7 +25,7 @@ def read_file(file_path, count_list, accept_dim = False, allow_large_files = Tru
         mean_intensity = np.mean(file[0])
         return 2 * np.exp(-1) * mean_intensity <= min_intensity
     
-    if file_path.endswith('.tif'):
+    if file_path.endswith('.tif') or file_path.endswith('.tiff'):
         file = iio.imread(file_path)
         file = np.reshape(file, (file.shape + (1,))) if len(file.shape) == 3 else file
         if file.shape[3] != min(file.shape):

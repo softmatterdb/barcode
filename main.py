@@ -24,58 +24,53 @@ def set_config_data(args = None):
     config_data = {}
     reader_data = {}
     writer_data = {}
-    resilience_data = {}
+    binarization_data = {}
     flow_data = {}
-    coarsening_data = {}
+    intensity_distribution_data = {}
     if args:
         reader_data = {
             'accept_dim_channels':args.dim_channels,
             'accept_dim_images':args.dim_images,
+            'binarization':args.check_binarization,
             'channel_select':'All' if args.channels else int(args.channel_selection),
-            'coarsening':args.check_coarsening,
-            'flow':args.check_flow,
-            'resilience':args.check_resilience,
-            'return_graphs':args.return_graphs,
+            'optical_flow':args.check_optical_flow,
+            'intensity_distribution':args.check_intensity_distribution,
             'verbose':args.verbose
         }
         
         writer_data = {
-            'return_intermediates':args.return_intermediates,
-            'stitch_barcode':args.stitch_barcode
+            'generate_barcode':args.generate_barcode,
+            'save_rds':args.save_rds,
+            'save_visualizations':args.save_visualizations,
         }
         
-        if reader_data['resilience']:
-            resilience_data = {
-                'evaluation_settings':{
-                    'f_start':float(args.pf_start),
-                    'f_stop':float(args.pf_stop)
-                },
-                'frame_step':int(args.res_f_step),
-                'r_offset':float(args.r_offset),
+        if reader_data['binarization']:
+            binarization_data = {
+                'frame_step':int(args.ib_f_step),
+                'percentage_frames_evaluated':float(args.ib_pf_evaluation),
+                'threshold_offset':float(args.thresh_offset),
             }
         if reader_data['flow']:
             flow_data = {
                 'downsample':int(args.downsample),
-                'frame_step':int(args.flow_f_step),
-                'frame_interval':int(args.frame_interval),
-                'nm_pixel_ratio':int(args.nm_pixel_ratio),
-                'win_size':int(args.win_size)
+                'exposure_time':float(args.exposure_time),
+                'frame_step':int(args.of_f_step),
+                'percentage_frames_evaluated':float(args.of_pf_evaluation),
+                'um_pixel_ratio':float(args.um_pixel_ratio),
+                'win_size':int(args.win_size),
             }
 
-        if reader_data['coarsening']:
-            coarsening_data = {
-                'evaluation_settings':{
-                    'first_frame':int(args.first_frame), 
-                    'last_frame':False if int(args.last_frame) == 0 else int(args.last_frame)
-                },
-                'mean_mode_frames_percent':float(args.pf_evaluation),
+        if reader_data['intensity_distribution']:
+            intensity_distribution_data = {
+                'frame_step':int(args.id_f_step),
+                'percentage_frames_evaluated':float(args.id_pf_evaluation),
             }
 
         config_data = {
-            'coarse_parameters':coarsening_data,
-            'flow_parameters':flow_data,
+            'image_binarization_parameters':binarization_data,
+            'intensity_distribution_parameters':intensity_distribution_data,
+            'optical_flow_parameters':flow_data,
             'reader':reader_data,
-            'resilience_parameters':resilience_data,
             'writer':writer_data
         }
         
@@ -132,12 +127,12 @@ def main ():
     execution_frame = ttk.Frame(notebook)
     binarize_frame  = ttk.Frame(notebook)
     flow_frame      = ttk.Frame(notebook)
-    coarse_frame    = ttk.Frame(notebook)
+    id_frame    = ttk.Frame(notebook)
     barcode_frame   = ttk.Frame(notebook)
     notebook.add(execution_frame, text="Execution Settings")
     notebook.add(binarize_frame,  text="Binarization Settings")
     notebook.add(flow_frame,      text="Optical Flow Settings")
-    notebook.add(coarse_frame,    text="Intensity Distribution Settings")
+    notebook.add(id_frame,    text="Intensity Distribution Settings")
     notebook.add(barcode_frame,   text="Barcode Generator + CSV Aggregator")
 
     #define variable for each argument 
@@ -150,7 +145,7 @@ def main ():
 
     def browse_file():
         chosen = filedialog.askopenfilename(
-            filetypes=[("TIFF Image","*.tif"), ("ND2 Document","*.nd2")],
+            filetypes=[("TIFF Image","*.tif"), ("TIFF Image", "*.tiff"), ("ND2 Document","*.nd2")],
             title="Select a File"
         )
         if chosen:
@@ -173,37 +168,36 @@ def main ():
         browse_folder_btn.config(state=dir_state)
 
     # ---- Reader Execution Settings ----
-    check_resilience_var = tk.BooleanVar()  # --check_resilience
-    check_flow_var       = tk.BooleanVar()  # --check_flow
-    check_coarsening_var = tk.BooleanVar()  # --check_coarsening
+    check_binarization_var = tk.BooleanVar()  # --check_binarization
+    check_optical_flow_var       = tk.BooleanVar()  # --check_optical_flow
+    check_intensity_distribution_var = tk.BooleanVar()  # --check_intensity_distribution
     dim_images_var       = tk.BooleanVar()  # --dim_images
     dim_channels_var     = tk.BooleanVar()  # --dim_channels
 
     # ---- Writer Data ----
     verbose_var           = tk.BooleanVar() # --verbose
-    return_graphs_var     = tk.BooleanVar() # --return_graphs
-    return_intermediates_var = tk.BooleanVar() # --return_intermediates
-    stitch_barcode_var    = tk.BooleanVar() # --stitch_barcode
+    save_visualizations_var     = tk.BooleanVar() # --save_visualizations
+    save_rds_var = tk.BooleanVar() # --save_rds
+    generate_barcode_var    = tk.BooleanVar() # --generate_barcode
     configuration_file_var= tk.StringVar()  # --configuration_file
 
     # ---- Binarization Settings ----
-    r_offset_var    = tk.DoubleVar(value=0.1)   # --r_offset
-    res_f_step_var  = tk.IntVar(value=10)       # --res_f_step
-    pf_start_var    = tk.DoubleVar(value=0.9)   # --pf_start
-    pf_stop_var     = tk.DoubleVar(value=1.0)   # --pf_stop
+    thresh_offset_var    = tk.DoubleVar(value=0.1)   # --thresh_offset
+    ib_f_step_var  = tk.IntVar(value=10)       # --ib_f_step
+    ib_pf_evaluation_var    = tk.DoubleVar(value=0.05)   # --ib_pf_eval
     sample_file_var = tk.StringVar() 
 
     # ---- Optical Flow Settings ----
-    flow_f_step_var    = tk.IntVar(value=10)    # --flow_f_step
+    of_f_step_var    = tk.IntVar(value=10)    # --of_f_step
     win_size_var       = tk.IntVar(value=32)    # --win_size
     downsample_var     = tk.IntVar(value=8)     # --downsample
-    nm_pixel_ratio_var = tk.DoubleVar(value=1.0)     # --nm_pixel_ratio
-    frame_interval_var = tk.IntVar(value=1)     # --frame_interval
+    um_pixel_ratio_var = tk.DoubleVar(value=1.0)     # --um_pixel_ratio
+    exposure_time_var = tk.DoubleVar(value=1.0)     # --exposure_time
+    of_pf_evaluation_var = tk.DoubleVar(value=0.05) # --of_pf_evaluation
 
     # ---- Intensity Distribution Settings ----
-    first_frame_var   = tk.IntVar(value=1)      # --first_frame
-    last_frame_var    = tk.IntVar(value=0)      # --last_frame
-    pf_evaluation_var = tk.DoubleVar(value=0.1) # --pf_evaluation
+    id_f_step_var    = tk.IntVar(value=10)    # --id_f_step
+    id_pf_evaluation_var = tk.DoubleVar(value=0.05) # --id_pf_evaluation
 
     # ---- Barcode Generator + CSV Aggregator ----
     csv_paths_list      = []                   # we’ll store a Python list of file-paths (instead of a StringVar)
@@ -284,7 +278,7 @@ def main ():
     #channel selection 
     tk.Label(execution_frame, text="Choose Channel (-3 to 4):").grid(row=row_idx, column=0, sticky="w", padx=5, pady=5)
     channel_spin = tk.Spinbox(execution_frame, 
-        from_=-4, to=4, 
+        from_=-3, to=4, 
         textvariable=channel_selection_var, 
         width=5
     )
@@ -318,7 +312,7 @@ def main ():
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=check_resilience_var
+        variable=check_binarization_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
@@ -333,7 +327,7 @@ def main ():
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=check_flow_var
+        variable=check_optical_flow_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
@@ -348,7 +342,7 @@ def main ():
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=check_coarsening_var
+        variable=check_intensity_distribution_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
@@ -402,12 +396,12 @@ def main ():
 
     tk.Label(
         execution_frame,
-        text="Save Graphs",
+        text="Save Data Visualizations",
         font=('TkDefaultFont', 10, 'bold')
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=return_graphs_var
+        variable=save_visualizations_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
@@ -422,7 +416,7 @@ def main ():
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=return_intermediates_var
+        variable=save_rds_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
@@ -432,16 +426,16 @@ def main ():
 
     tk.Label(
         execution_frame,
-        text="Dataset Barcode",
+        text="Generate Dataset Barcode",
         font=('TkDefaultFont', 10, 'bold')
     ).grid(row=row_idx, column=0, columnspan=3, sticky="w", padx=5, pady=(10,0))
     tk.Checkbutton(
         execution_frame,
-        variable=stitch_barcode_var
+        variable=generate_barcode_var
     ).grid(row=row_idx+1, column=0, sticky="w", padx=5)
     tk.Label(
         execution_frame,
-        text="Generates an aggregate barcode for the dataset"
+        text="Generates an color-coded barcode visualization for the dataset"
     ).grid(row=row_idx+1, column=0, sticky="w", padx=(25,5), pady=(0,0))
     row_idx += 2
 
@@ -461,7 +455,7 @@ def main ():
     #BINARIZATION SETTINGS 
     row_b = 0
 
-    tk.Label(binarize_frame, text="Binarization Threshold:").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(binarize_frame, text="Binarization Threshold").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
     scale_frame = tk.Frame(binarize_frame)
     scale_frame.columnconfigure(0, weight=0) 
     for c in range (1, 10): 
@@ -475,7 +469,7 @@ def main ():
         to=1.00, 
         resolution=0.05, 
         orient="horizontal", 
-        variable=r_offset_var, 
+        variable=thresh_offset_var, 
         length=300, 
         showvalue=True
     )
@@ -483,12 +477,12 @@ def main ():
 
     decrease_btn = tk.Button(
         scale_frame, text="◀", width=2, 
-        command=lambda: r_offset_var.set(max(r_offset_var.get() - 0.05, -1.00)) 
+        command=lambda: thresh_offset_var.set(max(thresh_offset_var.get() - 0.05, -1.00)) 
     )
     decrease_btn.grid(row=0, column=0, padx=(0,2), pady=(15,0)) 
     increase_btn = tk.Button(
         scale_frame, text="▶", width=2, 
-        command=lambda: r_offset_var.set(min(r_offset_var.get() + 0.05, 1.00)) 
+        command=lambda: thresh_offset_var.set(min(thresh_offset_var.get() + 0.05, 1.00)) 
     )
     increase_btn.grid(row=0, column=10, padx=(2,0), pady=(15,0)) 
     
@@ -599,7 +593,7 @@ def main ():
         canvas_orig.draw() 
 
         #show down-sampled binarized 
-        offset = r_offset_var.get()
+        offset = thresh_offset_var.get()
         bin_arr = binarize(img, offset)
         small_bin = bin_arr[::scale, ::scale] 
         ax_bin.clear() 
@@ -636,15 +630,17 @@ def main ():
     file_path_var.trace_add("write", load_preview_frame)
     sample_file_var.trace_add("write", load_preview_frame) 
     # whenever threshold changes, re-bin & redraw
-    r_offset_var.trace_add("write", update_preview)
+    thresh_offset_var.trace_add("write", update_preview)
 
     def update_sample_file_options(*args): 
         dir_path = dir_path_var.get() 
         if dir_path and os.path.isdir(dir_path):
             # list only .tif and .nd2 files
             files = [
-                f for f in os.listdir(dir_path)
-                if f.lower().endswith(('.tif', '.nd2'))
+                os.path.join(dir, f).removeprefix(dir_path + os.path.sep)
+                for dir, _, files in os.walk(dir_path)
+                for f in files
+                if f.lower().endswith((".tif", ".tiff", ".nd2"))
             ]
             sample_file_combobox['values'] = files
             sample_file_combobox.config(state='readonly')
@@ -661,54 +657,41 @@ def main ():
     # kick everything off once
     load_preview_frame()
 
-    tk.Label(binarize_frame, text="Frame Step (res_f_step) [min=1]:").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
-    res_f_step_spin = ttk.Spinbox(
+    tk.Label(binarize_frame, text="Frame Step").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+    ib_f_step_spin = ttk.Spinbox(
         binarize_frame,
         from_=1, to=100,
         increment=1,
-        textvariable=res_f_step_var,
+        textvariable=ib_f_step_var,
         width=7
     )
-    res_f_step_spin.grid(row=row_b, column=1, padx=5, pady=5)
+    ib_f_step_spin.grid(row=row_b, column=1, padx=5, pady=5)
     row_b += 1
 
-    tk.Label(binarize_frame, text="Frame Start Percent (pf_start 0.5–0.9):").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
-    pf_start_spin = ttk.Spinbox(
-        binarize_frame,
-        from_=0.5, to=0.9,
-        increment=0.05,
-        textvariable=pf_start_var,
+    tk.Label(binarize_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+    ib_pf_eval_spin = ttk.Spinbox(
+        binarize_frame, from_=0.01, to=0.25,
+        increment=0.01,
+        textvariable=ib_pf_evaluation_var,
         format="%.2f",
         width=7
     )
-    pf_start_spin.grid(row=row_b, column=1, padx=5, pady=5)
-    row_b += 1
+    ib_pf_eval_spin.grid(row=row_b, column=1, padx=5, pady=5)
 
-    tk.Label(binarize_frame, text="Frame Stop Percent (pf_stop 0.9–1.0):").grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
-    pf_stop_spin = ttk.Spinbox(
-        binarize_frame,
-        from_=0.9, to=1.0,
-        increment=0.05,
-        textvariable=pf_stop_var,
-        format="%.2f",
-        width=7
-    )
-    pf_stop_spin.grid(row=row_b, column=1, padx=5, pady=5)
-    row_b += 1
 
     #OPTICAL FLOW SETTINGS 
     row_f = 0 
-    tk.Label(flow_frame, text="Frame Step (Minimum: 1 Frame):").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
-    flow_f_step_spin = ttk.Spinbox(
+    tk.Label(flow_frame, text="Frame Step").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    of_f_step_spin = ttk.Spinbox(
         flow_frame, from_=1, to=1000,
         increment=1,
-        textvariable=flow_f_step_var,
+        textvariable=of_f_step_var,
         width=7
     )
-    flow_f_step_spin.grid(row=row_f, column=1, padx=5, pady=5)
+    of_f_step_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    tk.Label(flow_frame, text="Window Size (Minimum: 1 Pixel):").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(flow_frame, text="Optical Flow Window Size").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
     win_size_spin = ttk.Spinbox(
         flow_frame, from_=1, to=1000,
         increment=1,
@@ -718,7 +701,7 @@ def main ():
     win_size_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    tk.Label(flow_frame, text="Downsample (Minimum: 1 Pixel):").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(flow_frame, text="Downsample/Binning Factor").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
     downsample_spin = ttk.Spinbox(
         flow_frame, from_=1, to=1000,
         increment=1,
@@ -728,75 +711,65 @@ def main ():
     downsample_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    #downsample optical flow preview 
-    # preview_flow_title = tk.Label(flow_frame, text="Dynamic preview of optical flow (first two frames):") 
-    # preview_flow_title.grid(
-    #     row=row_f, column=0, columnspan=2, padx=5, pady=(10,2), sticky="w" 
-    # )
-    # row_f += 1 
-
-    # fig_flow = Figure(figsize=(3,3), facecolor=bg_color) 
-    # ax_flow = fig_flow.ad_subplot(111) 
-
-    tk.Label(flow_frame, text="Nanometer to Pixel Ratio [1 nm – 1 mm]:").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
-    nm_pixel_spin = ttk.Spinbox(
-        flow_frame, from_=1, to=10**6,
-        increment=1,
-        textvariable=nm_pixel_ratio_var,
+    tk.Label(flow_frame, text="Micron to Pixel Ratio (1 nm – 1 mm)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    um_pixel_spin = ttk.Spinbox(
+        flow_frame, from_=10**-3, to=10**3,
+        increment=10**-3,
+        textvariable=um_pixel_ratio_var,
         width=9
     )
-    nm_pixel_spin.grid(row=row_f, column=1, padx=5, pady=5)
+    um_pixel_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    tk.Label(flow_frame, text="Frame Interval [1–1000]:").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(flow_frame, text="Exposure Time (1 ms - 1 hour)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
     frame_interval_spin = ttk.Spinbox(
-        flow_frame, from_=1, to=10**3,
-        increment=1,
-        textvariable=frame_interval_var,
+        flow_frame, from_=10**-3, to=3.6 * 10**3,
+        increment=10**-3,
+        textvariable=exposure_time_var,
         width=7
     )
     frame_interval_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    #INTENSITY DISTRIBUTION SETTINGS 
-    row_c = 0 
-
-    tk.Label(coarse_frame, text="First Frame [min=1]:").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
-    first_frame_spin = ttk.Spinbox(
-        coarse_frame, from_=1, to=10**2,
-        increment=1,
-        textvariable=first_frame_var,
-        width=7
-    )
-    first_frame_spin.grid(row=row_c, column=1, padx=5, pady=5)
-    row_c += 1
-
-    tk.Label(coarse_frame, text="Last Frame (Select 0 to compare ending frames):").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
-    last_frame_spin = ttk.Spinbox(
-        coarse_frame, from_=0, to=10**2,
-        increment=1,
-        textvariable=last_frame_var,
-        width=7
-    )
-    last_frame_spin.grid(row=row_c, column=1, padx=5, pady=5)
-    row_c += 1
-
-    tk.Label(coarse_frame, text="Percent of Frames Evaluated [0.01–0.2]:").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
-    pf_eval_spin = ttk.Spinbox(
-        coarse_frame, from_=0.01, to=0.2,
+    tk.Label(flow_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    of_pf_eval_spin = ttk.Spinbox(
+        flow_frame, from_=0.01, to=0.25,
         increment=0.01,
-        textvariable=pf_evaluation_var,
+        textvariable=of_pf_evaluation_var,
         format="%.2f",
         width=7
     )
-    pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    of_pf_eval_spin.grid(row=row_f, column=1, padx=5, pady=5)
+
+    #INTENSITY DISTRIBUTION SETTINGS 
+    row_c = 0 
+
+    tk.Label(id_frame, text="Frame Step").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_f_step_spin = ttk.Spinbox(
+        id_frame,
+        from_=1, to=100,
+        increment=1,
+        textvariable=id_f_step_var,
+        width=7
+    )
+    id_f_step_spin.grid(row=row_c, column=1, padx=5, pady=5)
     row_c += 1
+
+    tk.Label(id_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=0.01, to=0.25,
+        increment=0.01,
+        textvariable=id_pf_evaluation_var,
+        format="%.2f",
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
 
     #BARCODE GENERATOR + CSV AGGREGATOR 
     row_ba = 0
 
     #csv file chooser 
-    tk.Label(barcode_frame, text="Select CSV Files:").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(barcode_frame, text="Select CSV Files").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
     csv_label = tk.Label(barcode_frame, text="No files selected", wraplength=200, justify="left")
     csv_label.grid(row=row_ba, column=1, sticky="w", padx=5, pady=5)
 
@@ -819,7 +792,7 @@ def main ():
     row_ba += 1
 
     #aggregate location (filesaver)
-    tk.Label(barcode_frame, text="Aggregate CSV Location:").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(barcode_frame, text="Aggregate CSV Location").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
     combo_entry = tk.Entry(barcode_frame, textvariable=combined_location_var, width=40)
     combo_entry.grid(row=row_ba, column=1, padx=5, pady=5)
 
@@ -844,7 +817,7 @@ def main ():
     row_ba += 1
 
     #metric sort 
-    tk.Label(barcode_frame, text="Sort Parameter:").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(barcode_frame, text="Sort Parameter").grid(row=row_ba, column=0, sticky="w", padx=5, pady=5)
     sort_menu = ttk.OptionMenu(
         barcode_frame,
         sort_var,
@@ -908,32 +881,31 @@ def main ():
                 settings = argparse.Namespace() 
                 settings.barcode_generation = (mode == "agg")
 
-                check_resilience = check_resilience_var.get()
-                check_flow       = check_flow_var.get()
-                check_coarsening = check_coarsening_var.get()
+                check_binarization = check_binarization_var.get()
+                check_optical_flow       = check_optical_flow_var.get()
+                check_intensity_distribution = check_intensity_distribution_var.get()
                 dim_images       = dim_images_var.get()
                 dim_channels     = dim_channels_var.get()
 
                 verbose          = verbose_var.get()
-                return_graphs    = return_graphs_var.get()
-                return_intermediates = return_intermediates_var.get()
-                stitch_barcode   = stitch_barcode_var.get()
+                save_visualizations    = save_visualizations_var.get()
+                save_rds = save_rds_var.get()
+                generate_barcode   = generate_barcode_var.get()
                 configuration_file = configuration_file_var.get()
 
-                r_offset         = r_offset_var.get()
-                res_f_step       = res_f_step_var.get()
-                pf_start         = pf_start_var.get()
-                pf_stop          = pf_stop_var.get()
+                thresh_offset         = thresh_offset_var.get()
+                ib_f_step       = ib_f_step_var.get()
+                ib_pf_evaluation         = ib_pf_evaluation_var.get()
 
-                flow_f_step      = flow_f_step_var.get()
+                of_f_step      = of_f_step_var.get()
                 win_size         = win_size_var.get()
                 downsample       = downsample_var.get()
-                nm_pixel_ratio   = nm_pixel_ratio_var.get()
-                frame_interval   = frame_interval_var.get()
-
-                first_frame      = first_frame_var.get()
-                last_frame       = last_frame_var.get()
-                pf_evaluation    = pf_evaluation_var.get()
+                um_pixel_ratio   = um_pixel_ratio_var.get()
+                exposure_time   = exposure_time_var.get()
+                of_pf_evaluation = of_pf_evaluation_var.get()
+                
+                id_f_step = id_f_step_var.get()
+                id_pf_evaluation    = id_pf_evaluation_var.get()
 
                 csv_paths        = csv_paths_list[:]  # copy of the list
                 combined_location= combined_location_var.get()
@@ -946,32 +918,31 @@ def main ():
                 settings.channels         = channels
                 settings.channel_selection= channel_selection
 
-                settings.check_resilience = check_resilience
-                settings.check_flow       = check_flow
-                settings.check_coarsening = check_coarsening
+                settings.check_binarization = check_binarization
+                settings.check_optical_flow       = check_optical_flow
+                settings.check_intensity_distribution = check_intensity_distribution
                 settings.dim_images       = dim_images
                 settings.dim_channels     = dim_channels
 
                 settings.verbose          = verbose
-                settings.return_graphs    = return_graphs
-                settings.return_intermediates = return_intermediates
-                settings.stitch_barcode   = stitch_barcode
+                settings.save_visualizations    = save_visualizations
+                settings.save_rds = save_rds
+                settings.generate_barcode   = generate_barcode
                 settings.configuration_file = configuration_file
 
-                settings.r_offset         = r_offset
-                settings.res_f_step       = res_f_step
-                settings.pf_start         = pf_start
-                settings.pf_stop          = pf_stop
+                settings.thresh_offset         = thresh_offset
+                settings.ib_f_step       = ib_f_step
+                settings.ib_pf_evaluation         = ib_pf_evaluation
 
-                settings.flow_f_step      = flow_f_step
+                settings.of_f_step      = of_f_step
                 settings.win_size         = win_size
                 settings.downsample       = downsample
-                settings.nm_pixel_ratio   = nm_pixel_ratio
-                settings.frame_interval   = frame_interval
+                settings.um_pixel_ratio   = um_pixel_ratio
+                settings.exposure_time   = exposure_time
+                settings.of_pf_evaluation = of_pf_evaluation
 
-                settings.first_frame      = first_frame
-                settings.last_frame       = last_frame
-                settings.pf_evaluation    = pf_evaluation
+                settings.id_f_step = id_f_step
+                settings.id_pf_evaluation    = id_pf_evaluation
 
                 # csv_paths as a list of paths 
                 settings.csv_paths        = csv_paths
@@ -1025,29 +996,29 @@ def main ():
                         settings.dim_images   = dim_images
                         settings.channels     = channels
                         settings.channel_selection = channel_selection
-                        settings.check_coarsening   = check_coarsening
-                        settings.check_flow         = check_flow
-                        settings.check_resilience   = check_resilience
-                        settings.return_graphs      = return_graphs
+                        settings.check_intensity_distribution   = check_intensity_distribution
+                        settings.check_optical_flow         = check_optical_flow
+                        settings.check_binarization   = check_binarization
+                        settings.save_visualizations      = save_visualizations
                         settings.verbose            = verbose
 
-                        settings.return_intermediates = return_intermediates
-                        settings.stitch_barcode    = stitch_barcode
+                        settings.save_rds = save_rds
+                        settings.generate_barcode    = generate_barcode
 
-                        settings.pf_start = pf_start
-                        settings.pf_stop  = pf_stop
-                        settings.res_f_step = res_f_step
-                        settings.r_offset   = r_offset
+                        settings.ib_pf_evaluation = ib_pf_evaluation
+                        settings.ib_f_step = ib_f_step
+                        settings.thresh_offset   = thresh_offset
 
                         settings.downsample     = downsample
-                        settings.flow_f_step    = flow_f_step
-                        settings.frame_interval = frame_interval
-                        settings.nm_pixel_ratio = nm_pixel_ratio
+                        settings.of_f_step    = of_f_step
+                        settings.exposure_time = exposure_time
+                        settings.um_pixel_ratio = um_pixel_ratio
                         settings.win_size       = win_size
+                        settings.of_pf_evaluation = of_pf_evaluation
 
-                        settings.first_frame   = first_frame
-                        settings.last_frame    = last_frame
-                        settings.pf_evaluation = pf_evaluation
+
+                        settings.id_f_step = id_f_step
+                        settings.id_pf_evaluation    = id_pf_evaluation
 
                         config_data = set_config_data(settings)
 
