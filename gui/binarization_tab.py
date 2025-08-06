@@ -1,5 +1,4 @@
 import os
-import sys
 
 import tkinter as tk
 from tkinter import ttk
@@ -9,8 +8,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from gui.config import PreviewConfigGUI, InputConfigGUI, BarcodeConfigGUI
+from .preview_binarization import load_first_frame, binarize,group_avg
 from skimage import io, color, filters, measure, morphology
-from utils.preview_binarization import load_first_frame, binarize, group_avg
 
 def create_binarization_frame(
     parent,

@@ -183,6 +183,7 @@ def process_multiple_files(
     file_itr = 1
 
     for file_path in files_to_process:
+
         try:
             results, file_itr = process_single_file(
                 file_path, config, ff_loc, file_itr, total_files
@@ -193,17 +194,11 @@ def process_multiple_files(
             print(e)
             continue
         except Exception as e:
-            print(f"Exception processing file: {file_path}")
-            print(f"{type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
-
             with open(ff_loc, "a", encoding="utf-8") as log_file:
                 log_file.write(f"File: {file_path}, Exception: {str(e)}\n")
             continue
 
         if results == None:
-            print("NONE")
             continue
 
         for result in results:
@@ -212,7 +207,6 @@ def process_multiple_files(
         # Timing and logging
         timer.log_time_since_last_log("Time Elapsed")
 
-    # print("total result count: ", len(all_results))
     return all_results
 
 
