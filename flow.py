@@ -95,8 +95,6 @@ def analyze_optical_flow(file, name, channel, frame_stride, downsample, exposure
 
     vector_lengths = np.sqrt(vx_list ** 2 + vy_list ** 2)
     sigma_thetas = np.sqrt(-2 * np.log(vector_lengths))
-    if (sigma_thetas == np.nan).any():
-        print(vector_lengths)
 
     theta = np.arctan2(np.nanmean(vy_list), np.nanmean(vx_list)) # Metric for average flow direction # "Mean Flow Direction"
     sigma_theta = np.nanmean(sigma_thetas) # Metric for st. dev of flow (-pi, pi) # "Flow Directional Spread"

@@ -37,7 +37,6 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
                 frame_counts = normalize_counts(frame_counts)
                 frame_values = frame_values[np.argwhere(frame_counts > noise_threshold)]
                 frame_counts = frame_counts[np.argwhere(frame_counts > noise_threshold)]
-                print(frame_values.min(), frame_counts[np.argmin(frame_values)])
                 csvwriter.writerow(flatten(frame_values))
                 csvwriter.writerow(flatten(frame_counts))
                 csvwriter.writerow([])
