@@ -18,6 +18,10 @@ def vprint(*args, **kwargs):
 class MyException(Exception):
     pass
 
+def normalize_counts(count): 
+    return count / count.sum()
+
+
 def inv(arr):
     ones_arr = np.ones(shape = arr.shape)
     return ones_arr - arr
@@ -55,10 +59,20 @@ def median_skewness(frame):
     stdev_intensity = np.std(frame)
     return 3 * (mean_intensity - median_intensity)/stdev_intensity
 
-def calc_frame_metric(metric, data):
+def flatten(xss):
+    return np.array([x for xs in xss for x in xs])
+
+def calc_frame_metric(metric, data, bin_width = 5, noise_floor = 10**-3):
     mets = []
     for i in range(len(data)):
-        met = metric(data[i].flatten())
+        min_boundary = int(np.floor(np.min(data[i])/bin_width) * bin_width)
+        max_boundary = int(np.ceil(np.max(data[i])/bin_width) * bin_width)
+        bins = np.arange(min_boundary, max_boundary, bin_width)
+        frame_counts, frame_values = np.histogram(data[i], bins)
+        frame_values = frame_values[np.argwhere(frame_counts > noise_floor)]
+        frame_counts = frame_counts[np.argwhere(frame_counts > noise_floor)]
+        flattened_frame_dist = flatten([[fv] * fc for fv, fc in zip(frame_values, frame_counts)])
+        met = metric(flattened_frame_dist)
         mets.append(met)
     return mets
 

@@ -45,7 +45,6 @@ def read_file(file_path, count_list, accept_dim = False, allow_large_files = Tru
                 if ndfile == None:
                     raise TypeError('Unable to read file, skipping to next file...')
                 file = ndfile.asarray()
-                shape = (file.shape[0], file.shape[2], file.shape[3], file.shape[1]) # Reorder
                 file = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
 
         except Exception as e:
