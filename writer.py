@@ -166,10 +166,10 @@ def gen_combined_barcode(data, figpath, sort = None, separate = True):
 
     for channel in unique_channels:
         if separate:
-            channel_figpath = f'{figpath} (Channel {int(channel)}).png'
+            channel_figpath = f'{figpath} (Channel {int(channel)}).svg'
             filtered_channel_data = np.array(data[data[:,0] == channel][:,2:])
         else:
-            channel_figpath = f'{figpath}.png'
+            channel_figpath = f'{figpath}.svg'
             filtered_channel_data = np.array(data[np.isin(data[:,0], unique_channels)][:,2:])
 
         height = 9 * int(len(filtered_channel_data) / 40) if len(filtered_channel_data) > 40 else 9
