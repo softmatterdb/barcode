@@ -62,7 +62,9 @@ def set_config_data(args = None):
 
         if reader_data['intensity_distribution']:
             intensity_distribution_data = {
+                'bin_size':int(args.hist_bin_size),
                 'frame_step':int(args.id_f_step),
+                'noise_threshold':float(args.noise_threshold),
                 'percentage_frames_evaluated':float(args.id_pf_evaluation),
             }
 
@@ -196,7 +198,9 @@ def main ():
     of_pf_evaluation_var = tk.DoubleVar(value=0.05) # --of_pf_evaluation
 
     # ---- Intensity Distribution Settings ----
+    bin_size_var = tk.IntVar(value = 5) # --hist_bin_size
     id_f_step_var    = tk.IntVar(value=10)    # --id_f_step
+    noise_threshold_var = tk.DoubleVar(value=5e-4) # --noise_threshold
     id_pf_evaluation_var = tk.DoubleVar(value=0.05) # --id_pf_evaluation
 
     # ---- Barcode Generator + CSV Aggregator ----
@@ -488,7 +492,6 @@ def main ():
     
     tick_values = [round(-1.00+i*0.25, 2) for i in range(9)]
     for i, val in enumerate(tick_values):
-        #scale_frame.columnconfigure(i, weight=1)
         lbl = tk.Label(scale_frame, text=f"{val:.2f}")
         lbl.grid(row=1, column=i+1, sticky="n")
     row_b += 1
@@ -764,6 +767,27 @@ def main ():
         width=7
     )
     id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    row_c += 1
+
+    tk.Label(id_frame, text="Intensity Distribution Binning Size").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=1, to=25,
+        increment=1,
+        textvariable=bin_size_var,
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    row_c += 1
+
+    tk.Label(id_frame, text="Intensity Distribution Noise Threshold").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=1e-5, to=1e-2,
+        increment=1e-5,
+        textvariable=noise_threshold_var,
+        format="%.5f",
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
 
     #BARCODE GENERATOR + CSV AGGREGATOR 
     row_ba = 0
@@ -904,7 +928,9 @@ def main ():
                 exposure_time   = exposure_time_var.get()
                 of_pf_evaluation = of_pf_evaluation_var.get()
                 
+                hist_bin_size = bin_size_var.get()
                 id_f_step = id_f_step_var.get()
+                noise_threshold = noise_threshold_var.get()
                 id_pf_evaluation    = id_pf_evaluation_var.get()
 
                 csv_paths        = csv_paths_list[:]  # copy of the list
@@ -941,7 +967,9 @@ def main ():
                 settings.exposure_time   = exposure_time
                 settings.of_pf_evaluation = of_pf_evaluation
 
+                settings.hist_bin_size = hist_bin_size
                 settings.id_f_step = id_f_step
+                settings.noise_threshold = noise_threshold
                 settings.id_pf_evaluation    = id_pf_evaluation
 
                 # csv_paths as a list of paths 
@@ -1017,7 +1045,9 @@ def main ():
                         settings.of_pf_evaluation = of_pf_evaluation
 
 
+                        settings.hist_bin_size = hist_bin_size
                         settings.id_f_step = id_f_step
+                        settings.noise_threshold = noise_threshold
                         settings.id_pf_evaluation    = id_pf_evaluation
 
                         config_data = set_config_data(settings)
