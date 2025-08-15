@@ -73,10 +73,12 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
         else:
             flow_outputs = [np.nan] * 4
         if intensity_distribution:
+            noise_threshold = intensity_dist_params['noise_threshold']
+            bin_size = intensity_dist_params['bin_size']
             pf_eval = intensity_dist_params['percentage_frames_evaluated']
             frame_step = intensity_dist_params['frame_step']
             try:
-                cfig, id_outputs, flag = analyze_intensity_dist(file, fig_channel_dir_name, channel, pf_eval, frame_step, save_visualizations, save_rds, verbose)
+                cfig, id_outputs, flag = analyze_intensity_dist(file, fig_channel_dir_name, channel, pf_eval, frame_step, bin_size, noise_threshold, save_visualizations, save_rds, verbose)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
                     log_file.write(f"File: {file_path}, Module: Intensity Distribution, Exception: {str(e)}\n")

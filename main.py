@@ -769,9 +769,9 @@ def main ():
     id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
     row_c += 1
 
-    tk.Label(id_frame, text="Intensity Distribution Binning Size").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(id_frame, text="Distribution Number of Bins").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
     id_pf_eval_spin = ttk.Spinbox(
-        id_frame, from_=1, to=25,
+        id_frame, from_=100, to=500,
         increment=1,
         textvariable=bin_size_var,
         width=7
@@ -779,7 +779,7 @@ def main ():
     id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
     row_c += 1
 
-    tk.Label(id_frame, text="Intensity Distribution Noise Threshold").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(id_frame, text="Distribution Noise Threshold").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
     id_pf_eval_spin = ttk.Spinbox(
         id_frame, from_=1e-5, to=1e-2,
         increment=1e-5,

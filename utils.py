@@ -62,15 +62,12 @@ def median_skewness(frame):
 def flatten(xss):
     return np.array([x for xs in xss for x in xs])
 
-def calc_frame_metric(metric, data, bin_width = 5, noise_floor = 10**-3):
+def calc_frame_metric(metric, data, bin_number = 5, noise_floor = 10**-3):
     mets = []
     for i in range(len(data)):
-        min_boundary = int(np.floor(np.min(data[i])/bin_width) * bin_width)
-        max_boundary = int(np.ceil(np.max(data[i])/bin_width) * bin_width)
-        bins = np.arange(min_boundary, max_boundary, bin_width)
-        frame_counts, frame_values = np.histogram(data[i], bins)
-        frame_values = frame_values[np.argwhere(frame_counts > noise_floor)]
-        frame_counts = frame_counts[np.argwhere(frame_counts > noise_floor)]
+        frame_counts, frame_values = np.histogram(data[i], bin_number)
+        frame_values = flatten(frame_values[np.argwhere(frame_counts > noise_floor)])
+        frame_counts = flatten(frame_counts[np.argwhere(frame_counts > noise_floor)])
         flattened_frame_dist = flatten([[fv] * fc for fv, fc in zip(frame_values, frame_counts)])
         met = metric(flattened_frame_dist)
         mets.append(met)
