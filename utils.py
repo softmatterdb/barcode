@@ -66,9 +66,10 @@ def calc_frame_metric(metric, data, bin_number = 5, noise_floor = 10**-3):
     mets = []
     for i in range(len(data)):
         frame_counts, frame_values = np.histogram(data[i], bin_number)
+        frame_counts = normalize_counts(frame_counts)
         frame_values = flatten(frame_values[np.argwhere(frame_counts > noise_floor)])
         frame_counts = flatten(frame_counts[np.argwhere(frame_counts > noise_floor)])
-        flattened_frame_dist = flatten([[fv] * fc for fv, fc in zip(frame_values, frame_counts)])
+        flattened_frame_dist = flatten([[fv] * int(fc * data[i].shape[0] * data[i].shape[1]) for fv, fc in zip(frame_values, frame_counts)])
         met = metric(flattened_frame_dist)
         mets.append(met)
     return mets
