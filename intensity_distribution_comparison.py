@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv, os, functools, builtins
-from scipy.stats import kurtosis
-from utils import average_largest, calc_mode, median_skewness, mode_skewness, calc_frame_metric, find_analysis_frames, normalize_counts, flatten
+from utils import average_largest, find_analysis_frames, normalize_counts, flatten
+from utils.intensity_distribution import mean, frame_mode, median_skewness, mode_skewness, kurtosis, calc_frame_metric, histogram
 
 def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, bin_number, noise_threshold, save_visualization, save_rds, verbose):
     flag = 0 # No flags have been tripped by the module
@@ -22,7 +22,7 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
     fig, ax = plt.subplots(figsize=(5,5))
 
     # Check for saturation, posts saturation flag (flag = 2) if mode and maximal intensity values are same
-    flag == 2 if all([np.max(frame) == calc_mode(frame) for frame in frames_data]) else 0
+    flag == 2 if all([np.max(frame) == frame_mode(frame, bin_number) for frame in frames_data]) else 0
     if save_rds:
         filename = os.path.join(name, 'IntensityDistribution.csv')
         with open(filename, "w") as myfile:
@@ -30,12 +30,11 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
             for frame_idx in frame_indices:
                 csvwriter.writerow([f'Frame {frame_idx}'])
                 frame_data = image[frame_idx]
-                frame_counts, frame_values = np.histogram(frame_data, bins = bin_number)
-                frame_counts = normalize_counts(frame_counts)
+                frame_counts, frame_values = histogram(frame_data, bin_number)
                 frame_values = flatten(frame_values[np.argwhere(frame_counts > noise_threshold)])
                 frame_counts = flatten(frame_counts[np.argwhere(frame_counts > noise_threshold)])
-                csvwriter.writerow(frame_values[:])
-                csvwriter.writerow(normalize_counts(frame_counts))
+                csvwriter.writerow(frame_values)
+                csvwriter.writerow(frame_counts)
                 csvwriter.writerow([])
                     
     i_kurt = calc_frame_metric(kurtosis, i_frames_data, bin_number, noise_threshold)
@@ -65,18 +64,19 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
         i_frame = image[0]
         f_frame = image[-1]
         max_px_intensity = 1.1*np.max(image)
-        bins_width = 3        
-        set_bins = np.arange(0, max_px_intensity, bins_width)
-        i_count, bins = np.histogram(i_frame.flatten(), bins=set_bins, density=True)
-        f_count, bins = np.histogram(f_frame.flatten(), bins=set_bins, density=True)
-        center_bins = (bins[1] - bins[0])/2
-        plt_bins = bins[0:-1] + center_bins
-            
-        i_mean = np.mean(i_frame)
-        f_mean = np.mean(f_frame)
+        i_count, i_bins = histogram(i_frame, bin_number)
+        i_bins = flatten(i_bins[np.argwhere(i_count > noise_threshold)])
+        i_count = flatten(i_count[np.argwhere(i_count > noise_threshold)])
 
-        ax.plot(plt_bins[::10], i_count[::10], '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
-        ax.plot(plt_bins[::10], f_count[::10], 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
+        f_count, f_bins = histogram(f_frame, bin_number)
+        i_bins = flatten(i_bins[np.argwhere(i_count > noise_threshold)])
+        i_count = flatten(i_count[np.argwhere(i_count > noise_threshold)])
+            
+        i_mean = mean(i_bins, i_count)
+        f_mean = mean(f_bins, f_count)
+
+        ax.plot(i_bins, i_count, '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
+        ax.plot(f_bins, f_count, 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
         ax.axvline(x=i_mean, ms = 4, c = 'darkred', alpha=1, label="Frame 0 Mean")
         ax.axvline(x=f_mean, ms = 4, c = 'purple', alpha=1, label=f"Frame {len(image) - 1} Mean")
         ax.axhline(0, color='dimgray', alpha=0.6)

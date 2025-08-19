@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.stats import mode
-
 # Global verbose setting
 _VERBOSE = False
 
@@ -8,7 +6,6 @@ def set_verbose(verbose: bool):
     """Set global verbose mode."""
     global _VERBOSE
     _VERBOSE = verbose
-
 
 def vprint(*args, **kwargs):
     """Global verbose print function."""
@@ -20,7 +17,6 @@ class MyException(Exception):
 
 def normalize_counts(count): 
     return count / count.sum()
-
 
 def inv(arr):
     ones_arr = np.ones(shape = arr.shape)
@@ -41,38 +37,8 @@ def average_largest(lst, percent = 0.1):
     top_percent = int(np.ceil(length * percent))
     return np.mean(lst[0:top_percent])
 
-def calc_mode(frame):
-    mode_result = mode(frame.flatten(), keepdims=False)
-    mode_intensity = mode_result.mode if isinstance(mode_result.mode, np.ndarray) else np.array([mode_result.mode])
-    mode_intensity = mode_intensity[0] if mode_intensity.size > 0 else np.nan
-    return mode_intensity
-
-def mode_skewness(frame):
-    mean_intensity = np.mean(frame)
-    mode_intensity = calc_mode(frame)
-    stdev_intensity = np.std(frame)
-    return (mean_intensity - mode_intensity)/stdev_intensity
-
-def median_skewness(frame):
-    mean_intensity = np.mean(frame)
-    median_intensity = np.median(frame)
-    stdev_intensity = np.std(frame)
-    return 3 * (mean_intensity - median_intensity)/stdev_intensity
-
 def flatten(xss):
     return np.array([x for xs in xss for x in xs])
-
-def calc_frame_metric(metric, data, bin_number = 5, noise_floor = 10**-3):
-    mets = []
-    for i in range(len(data)):
-        frame_counts, frame_values = np.histogram(data[i], bin_number)
-        frame_counts = normalize_counts(frame_counts)
-        frame_values = flatten(frame_values[np.argwhere(frame_counts > noise_floor)])
-        frame_counts = flatten(frame_counts[np.argwhere(frame_counts > noise_floor)])
-        flattened_frame_dist = flatten([[fv] * int(fc * data[i].shape[0] * data[i].shape[1]) for fv, fc in zip(frame_values, frame_counts)])
-        met = metric(flattened_frame_dist)
-        mets.append(met)
-    return mets
 
 def find_analysis_frames(file, step_size):
     image_length = len(file)
