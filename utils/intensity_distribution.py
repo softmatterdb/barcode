@@ -6,16 +6,20 @@ def mean(values: np.ndarray, probabilities: np.ndarray):
 
 def stdev(values: np.ndarray, probabilities: np.ndarray):
     mean = np.sum(values * probabilities)
-    second_moment = np.sum((values ** 2) * probabilities)
-    return np.sqrt(second_moment - mean ** 2)
+    return np.sqrt(np.sum((values - mean) ** 2 * probabilities))
 
 def mode(values: np.ndarray, probabilities: np.ndarray):
-    return values[np.argmax(probabilities)]
+    try:
+        return values[np.argmax(probabilities)]
+    except:
+        return values
     
 def median(values: np.ndarray, probabilities: np.ndarray):
     cumulative_probabilities = np.cumsum(probabilities)
-    return flatten(values[np.argwhere(cumulative_probabilities >= 0.5)])[0]
-
+    try:
+        return flatten(values[np.argwhere(cumulative_probabilities >= 0.5)])[0]
+    except:
+        return values    
 def kurtosis(values: np.ndarray, probabilities: np.ndarray):
     def fourth_moment(values: np.ndarray, probabilities: np.ndarray):
         mean = np.sum(values * probabilities)
@@ -34,25 +38,33 @@ def median_skewness(values: np.ndarray, probabilities: np.ndarray):
     stdev_intensity = stdev(values, probabilities)
     return 3 * (mean_intensity - median_intensity)/stdev_intensity
 
-def calc_frame_metric(metric, data, bin_number = 300, noise_floor = 10**-3):
-    mets = []
+def calc_frame_metric(metric, data, bin_number, noise_threshold):
+    metric_outputs = []
     for i in range(len(data)):
-        frame_counts, frame_values = histogram(data[i], bin_number)
-        frame_values = flatten(frame_values[np.argwhere(frame_counts > noise_floor)])
-        frame_counts = flatten(frame_counts[np.argwhere(frame_counts > noise_floor)])
-        met = metric(frame_values, frame_counts)
-        mets.append(met)
-    return mets
+        frame_counts, frame_values = histogram(data[i], bin_number, noise_threshold)
+        metric_outputs.append(metric(frame_values, frame_counts))
+    return metric_outputs
 
-def frame_mode(frame: np.ndarray, bin_number: int):
-    counts, values = histogram(frame, bin_number)
+def calc_frame_metrics(metrics: list, data, bin_number, noise_threshold):
+    outputs = np.zeros(shape = (len(data), len(metrics)))
+    for i in range(len(data)):
+        frame_counts, frame_values = histogram(data[i], bin_number, noise_threshold)
+        for j in range(len(metrics)):
+            outputs[i, j] = metrics[j](frame_values, frame_counts)
+    return outputs
+
+def frame_mode(frame: np.ndarray, bin_number: int, noise_threshold: float):
+    counts, values = histogram(frame, bin_number, noise_threshold)
     return mode(values, counts)
 
-def histogram(frame: np.ndarray, bin_number: int) -> tuple[np.ndarray, np.ndarray]:
+def histogram(frame: np.ndarray, bin_number: int, noise_threshold: float) -> tuple[np.ndarray, np.ndarray]:
     if bin_number == 1:
         values, count = np.unique(frame, return_counts=True)
     else:
         count, values = np.histogram(frame, bins=bin_number)
         values = values[0:-1] + (values[1] - values[0])/2
+    count = normalize_counts(count)
+    values = flatten(values[np.argwhere(count > noise_threshold)])
+    count = flatten(count[np.argwhere(count > noise_threshold)])
     count = normalize_counts(count)
     return count, values

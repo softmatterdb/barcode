@@ -35,7 +35,7 @@ def average_largest(lst, percent = 0.1):
     lst.sort(reverse=True)
     length = len(lst)
     top_percent = int(np.ceil(length * percent))
-    return np.mean(lst[0:top_percent])
+    return np.nanmean(lst[0:top_percent])
 
 def flatten(xss):
     return np.array([x for xs in xss for x in xs])

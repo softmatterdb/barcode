@@ -217,17 +217,16 @@ def process_directory(root_dir, config_data):
         
         vprint('Time Elapsed:', elapsed_time)
         time_file.write('Time Elapsed: ' + str(elapsed_time) + "\n")
-        output_filepath = os.path.join(dir_name, filename + ' summary.csv')
+        output_filepath = os.path.join(dir_name, filename + ' Summary.csv')
         write_file(output_filepath, all_data)
         
         if generate_barcode:
-            output_figpath = os.path.join(dir_name, filename + ' summary barcode')
+            output_figpath = os.path.join(dir_name, filename + ' Summary Barcode')
             if channel_select == "All":
                 gen_combined_barcode(np.array(rfc_data[:,1:]), output_figpath, separate = False)
             else:
                 gen_combined_barcode(np.array(rfc_data[:,1:]), output_figpath)
-
-        settings_loc = os.path.join(dir_name, filename + " settings.yaml")
+        settings_loc = os.path.join(dir_name, filename + " Settings.yaml")
         with open(settings_loc, 'w+', encoding="utf-8") as ff:
             yaml.dump(config_data, ff)
 
@@ -293,7 +292,7 @@ def process_directory(root_dir, config_data):
         
         if generate_barcode:
             try:
-                output_figpath = os.path.join(root_dir, os.path.basename(root_dir) + '_Summary Barcode')
+                output_figpath = os.path.join(root_dir, os.path.basename(root_dir) + ' Summary Barcode')
                 gen_combined_barcode(np.array(all_rfc_data), output_figpath)
             except Exception as e:
                 with open(ff_loc, "a", encoding="utf-8") as log_file:
