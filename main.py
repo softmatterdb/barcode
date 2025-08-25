@@ -6,7 +6,8 @@ from tkinter import ttk, filedialog, messagebox
 import argparse 
 
 import numpy as np
-from preview_binarization import load_first_frame, binarize 
+from utils.preview import binarize
+from utils.reader import load_first_frame 
 from PIL import Image, ImageTk 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
