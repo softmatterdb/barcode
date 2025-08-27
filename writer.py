@@ -25,48 +25,41 @@ def write_file(output_filepath, data):
             for entry in data:
                 csvwriter.writerow(entry)
 
-def generate_aggregate_csv(filelist, csv_loc, gen_barcode, sort = None, separate_channel = False):
+def generate_aggregate_csv(csv_list, csv_loc, gen_barcode, sort = None, separate_channel = False):
     global headers
     if gen_barcode:
         combined_barcode_loc = os.path.join(os.path.dirname(csv_loc), f'{os.path.basename(csv_loc).removesuffix('.csv')} Barcode')
         
-    def combine_csvs(csv_list, keep_csv = False):
-        if not keep_csv:
-            with open(csv_loc, 'w', encoding="utf-8", newline="\n") as f:
-                csv_writer = csv.writer(f)
-                csv_writer.writerow(headers)
-        num_params = len(headers) - 1
-        csv_data = np.zeros(shape=(num_params))
-        if not csv_list:
-            return None
-        for csv_file in csv_list:
-            if not keep_csv:
-                with open(csv_file, 'r', newline='\n') as fread, open(csv_loc, 'a', encoding="utf-8", newline='\n') as fwrite:
+    num_params = len(headers) - 1
+    csv_data = np.zeros(shape=(num_params))
+    if not csv_list:
+        return None
+    if len(csv_list) == 1 and csv_list[0] == csv_loc:
+        with open(csv_loc, 'r', newline='\n') as fread:
+                csv_reader = csv.reader(fread)
+                next(csv_reader, None)
+                for row in csv_reader:
+                    row = [float(val) if val != '' else np.nan for val in row[1:]]
+                    arr_row = np.array(row)
+                    csv_data = np.vstack((csv_data, arr_row))
+    else:
+        with open(csv_loc, 'w', encoding="utf-8", newline="\n") as fwrite:
+            csv_writer = csv.writer(fwrite)
+            csv_writer.writerow(headers)
+            for csv_file in csv_list:
+                with open(csv_file, 'r', newline='\n') as fread:
                     csv_reader = csv.reader(fread)
-                    csv_writer = csv.writer(fwrite)
                     next(csv_reader, None)
                     for row in csv_reader:
                         csv_writer.writerow(row)
                         row = [float(val) if val != '' else np.nan for val in row[1:]]
                         arr_row = np.array(row)
                         csv_data = np.vstack((csv_data, arr_row))
-            else:
-                with open(csv_file, 'r', newline='\n') as fread:
-                    csv_reader = csv.reader(fread)
-                    next(csv_reader, None)
-                    for row in csv_reader:
-                        row = [float(val) if val != '' else np.nan for val in row[1:]]
-                        arr_row = np.array(row)
-                        csv_data = np.vstack((csv_data, arr_row))
-        return csv_data[1:]
-    
-    if len(filelist) == 1 and filelist[0] == csv_loc:
-        csv_data = combine_csvs(filelist, True)
-    else:
-        csv_data = combine_csvs(filelist)
+
+    csv_data = csv_data[1:]
 
     if gen_barcode:
-        gen_combined_barcode(csv_data, combined_barcode_loc, sort)
+        gen_combined_barcode(csv_data, combined_barcode_loc, sort, separate_channel)
 
 def check_limits(limit, thresh):
     if thresh < limit[0]:
@@ -174,7 +167,7 @@ def generate_comparison_barcodes(csv_list):
         plt.close('all')
     
 
-def gen_combined_barcode(data, figpath, sort = None, separate = True):
+def gen_combined_barcode(data, figpath, sort = None, separate = False):
     global headers
     num_params = len(headers) - 3
     if len(data.shape) <= 1:

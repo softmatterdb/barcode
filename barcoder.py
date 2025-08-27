@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from itertools import pairwise
 from utils import check_channel_dim, MyException
-from writer import write_file, gen_combined_barcode
+from writer import write_file, generate_aggregate_csv
 matplotlib.use('Agg')
 
 class MyException(Exception):
@@ -18,7 +18,7 @@ class MyException(Exception):
 def execute_htp(filepath, config_data, fail_file_loc, count, total):
     reader_data = config_data['reader']
     _, save_rds, save_visualizations = config_data['writer'].values()
-    accept_dim_channel, accept_dim_im, binarization, channel_select, optical_flow, intensity_dist, verbose = reader_data.values()
+    accept_dim_channel, accept_dim_im, binarization, channel_select, intensity_dist, optical_flow, verbose = reader_data.values()
     ib_data = config_data['image_binarization_parameters']
     of_data = config_data['optical_flow_parameters']
     id_data = config_data['intensity_distribution_parameters']
@@ -129,7 +129,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
     
     channels = min(file.shape)
     
-    rfc = []
+    barcode = []
     if channel_select == 'All':
         vprint('Total Channels:', channels)
         for channel in range(channels):
@@ -143,7 +143,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
                 results[2] = results[2] + 1
             else:
                 results = check(filepath, channel, binarization, optical_flow, intensity_dist, ib_data, of_data, id_data, fail_file_loc)
-            rfc.append(results)
+            barcode.append(results)
     
     else:
         while channel_select < 0:
@@ -157,14 +157,15 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             results[2] = results[2] + 1 # Indicate dim channel flag present
         else:
             results = check(filepath, channel_select, binarization, optical_flow, intensity_dist, ib_data, of_data, id_data, fail_file_loc)
-        rfc.append(results)
+        barcode.append(results)
 
-    return rfc, count
+    return barcode, count
 
 def remove_extension(filepath):
     for suffix in [".tif", ".tiff", ".nd2"]:
         if filepath.endswith(suffix):
             return filepath.removesuffix(suffix)
+    return filepath
 
 def reformat_time(time):
     if time / 3600 > 1:
@@ -184,128 +185,78 @@ def process_directory(root_dir, config_data):
     generate_barcode, _, _ = writer_data.values()
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None
-    
-    if os.path.isfile(root_dir):
-        channel_select = config_data['reader']['channel_select']
-        all_data = []
-        file_path = root_dir
-        filename = os.path.basename(file_path)
-        dir_name = os.path.dirname(file_path)
-        rfc_data = None
-        ff_loc = os.path.join(dir_name, remove_extension(filename) + "_failed_files.txt")
-        open(ff_loc, 'w').close()
-        time_filepath = os.path.join(dir_name, filename + 'time.txt')
-        time_file = open(time_filepath, "w", encoding="utf-8")
-        time_file.write(file_path + "\n")
-        start_time = time.time()
-        file_count = 1
-        try:
-            rfc_data, file_count = execute_htp(file_path, config_data, ff_loc, file_count, total=1)
-        except TypeError as e:
-            print(e)
-            return
-        except Exception as e:
-            with open(ff_loc, "a", encoding="utf-8") as log_file:
-                log_file.write(f"File: {file_path}, Exception: {str(e)}\n")
-        if rfc_data == None:
-            print("BARCODE could not process this data. Please try with a different file.")
-            return
-        all_data.extend(rfc_data)
-        filename = remove_extension(filename) + '_'
-        end_time = time.time()
-        elapsed_time = reformat_time(end_time - start_time)
-        
-        vprint('Time Elapsed:', elapsed_time)
-        time_file.write('Time Elapsed: ' + str(elapsed_time) + "\n")
-        output_filepath = os.path.join(dir_name, filename + ' Summary.csv')
-        write_file(output_filepath, all_data)
-        
-        if generate_barcode:
-            output_figpath = os.path.join(dir_name, filename + ' Summary Barcode')
-            if channel_select == "All":
-                gen_combined_barcode(np.array(rfc_data[:,1:]), output_figpath, separate = False)
-            else:
-                gen_combined_barcode(np.array(rfc_data[:,1:]), output_figpath)
-        settings_loc = os.path.join(dir_name, filename + " Settings.yaml")
-        with open(settings_loc, 'w+', encoding="utf-8") as ff:
-            yaml.dump(config_data, ff)
 
-        time_file.close()
-        if os.stat(ff_loc).st_size == 0:
-            os.remove(ff_loc)
-    else: 
-        all_data = []
-        all_rfc_data = []
-        time_filepath = os.path.join(root_dir, os.path.basename(root_dir) + ' time.txt')
-        time_file = open(time_filepath, "w", encoding="utf-8")
-        time_file.write(root_dir + "\n")
-        
-        start_folder_time = time.time()
-        ff_loc = os.path.join(root_dir, "failed_files.txt")
-        open(ff_loc, 'w').close()
-
-        file_count = sum([len([file for file in files if (file.endswith(".tif") or file.endswith(".nd2"))]) for _, _, files in os.walk(root_dir)])
-        file_itr = 1
-        
-        for dirpath, dirnames, filenames in os.walk(root_dir):
+    def find_files(folder):
+        files = []
+        file_formats = [".nd2", ".tiff", ".tif"]
+        for dirpath, dirnames, filenames in os.walk(folder):
             dirnames[:] = [d for d in dirnames]
-    
             for filename in filenames:
                 if filename.startswith('._'):
                     continue
+                for file_format in file_formats:
+                    if filename.endswith(file_format):
+                        files.append(os.path.join(dirpath, filename))
+        return files
+    
+    files = [root_dir] if os.path.isfile(root_dir) else find_files(root_dir)
+    file_count = len(files)
+    barcode_data = []
+    filename = remove_extension(os.path.basename(root_dir))
+    dirname = os.path.dirname(root_dir) if os.path.isfile(root_dir) else root_dir
+    print(dirname, filename)
+    time_filepath = os.path.join(dirname, filename + ' Time.txt')
+    error_filepath = os.path.join(dirname, filename + ' Failed Files.txt')
+    settings_filepath = os.path.join(dirname, filename + " Settings.yaml")
+    csv_filepath = os.path.join(dirname, filename + " Summary.csv")
 
-                file_path = os.path.join(dirpath, filename)
-                start_time = time.time()
-                try:
-                    rfc_data, file_itr = execute_htp(file_path, config_data, ff_loc, file_itr, file_count)
-                except TypeError as e:
-                    if "BARCODE" in str(e):
-                        continue
-                    print(e)
-                    continue
-                except Exception as e:
-                    with open(ff_loc, "a", encoding="utf-8") as log_file:
-                        log_file.write(f"File: {file_path}, Exception: {str(e)}\n")
-                    continue
-                if rfc_data == None:
-                    continue
-                all_data.extend(rfc_data)
-                for result in rfc_data:
-                    all_rfc_data.append(np.array(result[1:]))
-
-                end_time = time.time()
-                elapsed_time = reformat_time(end_time - start_time)
-                vprint('Time Elapsed:', elapsed_time)
-                time_file.write(file_path + "\n")
-                time_file.write('Time Elapsed: ' + str(elapsed_time) + "\n")
+    time_file = open(time_filepath, "w", encoding="utf-8")
+    time_file.write(root_dir + "\n")
         
-        output_filepath = os.path.join(root_dir, os.path.basename(root_dir) + " Summary.csv")
+    start_folder_time = time.time()
+    open(error_filepath, 'w').close()
+    file_number = 1
+    for file in files:
+        start_file_time = time.time()
         try:
-            write_file(output_filepath, all_data)
-        except:
-            counter = 1
-            output_filepath = os.path.join(root_dir, os.path.basename(root_dir) + f" Summary ({counter}).csv")
-            while os.path.exists(output_filepath):
-                counter += 1
-                output_filepath = os.path.join(root_dir, os.path.basename(root_dir) + f" Summary ({counter}).csv")
-            write_file(output_filepath, all_data)
-        
-        if generate_barcode:
-            try:
-                output_figpath = os.path.join(root_dir, os.path.basename(root_dir) + ' Summary Barcode')
-                gen_combined_barcode(np.array(all_rfc_data), output_figpath)
-            except Exception as e:
-                with open(ff_loc, "a", encoding="utf-8") as log_file:
-                    log_file.write(f"Unable to generate barcode, Exception: {str(e)}\n")
+            barcode, file_number = execute_htp(file, config_data, error_filepath, file_number, file_count)
+        except TypeError as e:
+            if "BARCODE" in str(e):
+                continue
+            print(e)
+            continue
+        except Exception as e:
+            with open(error_filepath, "a", encoding="utf-8") as log_file:
+                log_file.write(f"File: {file}, Exception: {str(e)}\n")
+            continue
+        if barcode == None:
+            continue
+        barcode_data.extend(barcode)
+        end_file_time = time.time()
+        elapsed_file_time = reformat_time(end_file_time - start_file_time)
+        vprint('Time Elapsed:', elapsed_file_time)
+        time_file.write(file + "\n")
+        time_file.write('Time Elapsed: ' + str(elapsed_file_time) + "\n")
+    
+    try:
+        write_file(csv_filepath, barcode_data)
+    except:
+        counter = 2
+        csv_filepath = os.path.join(dirname, filename + f"Summary ({counter}).csv")
+        while os.path.exists(csv_filepath):
+            counter += 1
+            csv_filepath = os.path.join(dirname, filename + f" Summary ({counter}).csv")
+        write_file(csv_filepath, barcode_data)
+    channel_select = config_data['reader']['channel_select']
+    separate_channel = bool(channel_select == "All")
+    # generate_aggregate_csv([csv_filepath], csv_filepath, generate_barcode, separate_channel=separate_channel)
+    end_folder_time = time.time()
+    elapsed_folder_time = reformat_time(end_folder_time - start_folder_time)
+    vprint('Time Elapsed to Process Folder:', elapsed_folder_time)
+    time_file.write('Time Elapsed to Process Folder: ' + str(elapsed_folder_time) + "\n")
 
-        end_folder_time = time.time()
-        elapsed_folder_time = reformat_time(end_folder_time - start_folder_time)
-        vprint('Time Elapsed to Process Folder:', elapsed_folder_time)
-        time_file.write('Time Elapsed to Process Folder: ' + str(elapsed_folder_time) + "\n")
-        
-        time_file.close()
-        if os.stat(ff_loc).st_size == 0:
-            os.remove(ff_loc)
-        settings_loc = os.path.join(root_dir, os.path.basename(root_dir) + " Settings.yaml")
-        with open(settings_loc, 'w+') as ff:
-            yaml.dump(config_data, ff)
+    time_file.close()
+    if os.stat(error_filepath).st_size == 0:
+        os.remove(error_filepath)
+    with open(settings_filepath, 'w+') as settings:
+        yaml.dump(config_data, settings)

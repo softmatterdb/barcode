@@ -51,7 +51,7 @@ def set_config_data(args = None):
                 'percentage_frames_evaluated':float(args.ib_pf_evaluation),
                 'threshold_offset':float(args.thresh_offset),
             }
-        if reader_data['flow']:
+        if reader_data['optical_flow']:
             flow_data = {
                 'downsample':int(args.downsample),
                 'exposure_time':float(args.exposure_time),

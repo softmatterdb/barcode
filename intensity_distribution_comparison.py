@@ -24,7 +24,7 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
     # Check for saturation, posts saturation flag (flag = 2) if mode and maximal intensity values are same
     flag == 2 if all([np.max(frame) == frame_mode(frame, bin_number, noise_threshold) for frame in frames_data]) else 0
     if save_rds:
-        filename = os.path.join(name, f'IntensityDistribution ({bin_number} Bins, {noise_threshold} Threshold).csv')
+        filename = os.path.join(name, f'IntensityDistribution.csv')
         with open(filename, "w") as myfile:
             csvwriter = csv.writer(myfile)
             for frame_idx in frame_indices:
