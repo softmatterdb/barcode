@@ -199,7 +199,7 @@ def main ():
     of_pf_evaluation_var = tk.DoubleVar(value=0.05) # --of_pf_evaluation
 
     # ---- Intensity Distribution Settings ----
-    bin_size_var = tk.IntVar(value = 5) # --hist_bin_size
+    bin_size_var = tk.IntVar(value = 300) # --hist_bin_size
     id_f_step_var    = tk.IntVar(value=10)    # --id_f_step
     noise_threshold_var = tk.DoubleVar(value=5e-4) # --noise_threshold
     id_pf_evaluation_var = tk.DoubleVar(value=0.05) # --id_pf_evaluation
@@ -725,7 +725,7 @@ def main ():
     um_pixel_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    tk.Label(flow_frame, text="Exposure Time (1 ms - 1 hour)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(flow_frame, text="Exposure Time [seconds] (1 ms - 1 hour)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
     frame_interval_spin = ttk.Spinbox(
         flow_frame, from_=10**-3, to=3.6 * 10**3,
         increment=10**-3,
