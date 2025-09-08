@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv, os, functools, builtins
-from utils import average_largest, find_analysis_frames, normalize_counts, flatten
-from utils.intensity_distribution import mean, frame_mode, median_skewness, mode_skewness, kurtosis, calc_frame_metric, histogram
+from utils import average_largest, find_analysis_frames
+from utils.intensity_distribution import frame_mode, median_skewness, mode_skewness, kurtosis, calc_frame_metric, histogram
+from visualization.analysis import save_intensity_plots
 
 def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, bin_number, noise_threshold, save_visualization, save_rds, verbose):
     flag = 0 # No flags have been tripped by the module
@@ -59,25 +60,9 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, b
 
     if save_visualization:
         # Plot the intensity distributions for the first and last frame for comparison
-        i_frame = image[0]
-        f_frame = image[-1]
+        first_frame = image[0]
+        end_frame = image[-1]
         max_px_intensity = 1.1*np.max(image)
-        i_count, i_bins = histogram(i_frame, bin_number, noise_threshold)
-
-        f_count, f_bins = histogram(f_frame, bin_number, noise_threshold)
-            
-        i_mean = mean(i_bins, i_count)
-        f_mean = mean(f_bins, f_count)
-
-        ax.plot(i_bins, i_count, '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
-        ax.plot(f_bins, f_count, 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
-        ax.axvline(x=i_mean, ms = 4, c = 'darkred', alpha=1, label="Frame 0 Mean")
-        ax.axvline(x=f_mean, ms = 4, c = 'purple', alpha=1, label=f"Frame {len(image) - 1} Mean")
-        ax.axhline(0, color='dimgray', alpha=0.6)
-        ax.set_xlabel("Pixel intensity value")
-        ax.set_ylabel("Probability")
-        ax.set_yscale('log')
-        ax.set_xlim(0,max_px_intensity)
-        ax.legend()
+        fig = save_intensity_plots(first_frame, end_frame, bin_number, noise_threshold, len(image), max_px_intensity)
 
     return fig, [max_kurt, max_median_skew, max_mode_skew, kurt_diff, median_skew_diff, mode_skew_diff], flag

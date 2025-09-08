@@ -1,12 +1,10 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import cv2 as cv
 import os, csv, functools, builtins
-import matplotlib.ticker as ticker
-import matplotlib.colors as colors
 import matplotlib
 matplotlib.use('Agg')
 from utils import groupAvg, find_analysis_frames
+from visualization.analysis import save_flow_field_visualization
 
 def analyze_optical_flow(file, name, channel, frame_stride, downsample, exposure_time, um_pix_ratio, frame_eval_percent, save_visualizations, save_rds, verbose, winsize = 32):
     # Defines print to enable printing only if verbose setting set to True
@@ -33,24 +31,10 @@ def analyze_optical_flow(file, name, channel, frame_stride, downsample, exposure
         
         speed = (downU ** 2 + downV ** 2) ** (1/2)
         direction = np.arctan2(downV, downU)
+        flow_field = [downU, downV, direction, speed]
 
-        img_shape = downU.shape[0] / downU.shape[1]
         if (start, stop) in visualization_flow_fields and save_visualizations:
-            fig, ax = plt.subplots(figsize=(10 * img_shape,10))
-            norm = colors.Normalize(vmin = 0, vmax = np.max(speed))
-            cma = matplotlib.cm.plasma
-            sm = matplotlib.cm.ScalarMappable(cmap = cma, norm = norm)
-            q = ax.quiver(downU, downV, norm(speed))
-            plt.colorbar(sm, ax = ax)
-            figname = f'Frame {start} to {stop} Flow Field.png'
-            figpath = os.path.join(name, figname)
-            ticks_adj = ticker.FuncFormatter(lambda x, _: '{0:g}'.format(x * downsample))
-            ax.xaxis.set_major_formatter(ticks_adj)
-            ax.yaxis.set_major_formatter(ticks_adj)
-            ax.set_aspect(aspect=1, adjustable='box')
-
-            fig.savefig(figpath)
-            plt.close('all')
+            save_flow_field_visualization(flow_field, start, stop, name, downsample)
         
         # Convert speed from pixels / interval to nm/sec
         # Conversion: px/interval * interval/frame * 1/(sec/frame) * um/px

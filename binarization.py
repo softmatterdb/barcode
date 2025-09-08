@@ -5,6 +5,7 @@ import csv, os, functools, builtins
 from skimage.measure import label, regionprops
 from scipy import ndimage
 from utils import MyException, inv, groupAvg, average_largest, find_analysis_frames
+from visualization.analysis import save_binarization_visualization, save_binarization_plots
 import matplotlib
 matplotlib.use('Agg')
 
@@ -73,17 +74,8 @@ def track_void(image, name, threshold, frame_indices, binning_number, save_visua
         new_frame = groupAvg(new_image, binning_number, bin_mask = True)
         
         if i in save_spots and save_visualization:
-            compare_fig, comp_axs = plt.subplots(ncols = 2, figsize=(10, 5))
-            comp_axs[0].imshow(image[i], cmap='gray')
-            comp_axs[1].imshow(new_frame, cmap='gray')
-            ticks_adj = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format(x * 2))
-            comp_axs[1].xaxis.set_major_formatter(ticks_adj)
-            comp_axs[1].yaxis.set_major_formatter(ticks_adj)
-            comp_axs[0].axis('off')  # Turn off the axis
-            comp_axs[1].axis('off')  # Turn off the axis
-            plt.savefig(os.path.join(name, f'Binarization Frame {i} Comparison.png'))
-            plt.close('all')
-            
+            save_binarization_visualization(image[i], new_frame, i, name)
+
         if save_rds:
             csvwriter.writerow([str(i)])
             csvwriter.writerows(new_frame)
@@ -104,12 +96,11 @@ def analyze_binarization(file, name, channel, threshold_offset = 0.1, frame_step
     vprint = print if verbose else lambda *a, **k: None
     vprint('Beginning Binarization Analysis')
     image = file[:,:,:,channel]
-
-    fig, ax = plt.subplots(figsize = (5,5))
-
     # Error Checking: Empty Image
     if (image == 0).all():
         return None, [np.nan] * 7
+    num_frames = len(image)
+    fig, ax = plt.subplots(figsize = (5,5))
     
     frame_indices, frame_step = find_analysis_frames(image, frame_step)
     
@@ -123,19 +114,8 @@ def analyze_binarization(file, name, channel, threshold_offset = 0.1, frame_step
     island_size_initial = np.mean(island_area_lst[:start_eval_index])
     island_size_initial2 = np.mean(island_area_lst2[:start_eval_index])
     island_percent_gain_list = np.array(island_area_lst)/island_size_initial
-    
-    start_index = 0
-    stop_index = len(largest_void_lst)
-    plot_range = np.arange(start_index * frame_step, stop_index * frame_step, frame_step)
-    plot_range[-1] = len(image) - 1 if stop_index * frame_step >= len(image) else stop_index * frame_step
-    ax.plot(plot_range, 100 * void_percent_gain_list[start_index:stop_index], c='b', label='Original Void Size Proportion')
-    ax.plot(plot_range, 100 * island_percent_gain_list[start_index:stop_index], c='r', label='Original Island Size Proportion')
-    ax.set_xticks(plot_range[::10])
-    if stop_index * frame_step >= len(image) != 0:
-        ax.set_xlim(left=None, right=len(image) - 1)
-    ax.set_xlabel("Frames")
-    ax.set_ylabel("Percentage of Original Size")
-    ax.legend()
+
+    fig = save_binarization_plots(void_percent_gain_list, island_percent_gain_list, num_frames, frame_step)
 
     img_dims = image[0].shape[0] * image[0].shape[1] / (binning_factor ** 2)
     

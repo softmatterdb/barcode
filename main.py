@@ -624,7 +624,8 @@ def main ():
             update_preview()
             return
         try:
-            preview_data["frame"] = load_first_frame(path)
+            channel = 0 if channels_var.get() else channel_selection_var.get()
+            preview_data["frame"] = load_first_frame(path, channel)
         except Exception as e:
             print(f"[Preview] couldn't load first frame: {e}")
             preview_data["frame"] = None
@@ -633,8 +634,11 @@ def main ():
     # whenever the user picks a new file, reload the first frame
     file_path_var.trace_add("write", load_preview_frame)
     sample_file_var.trace_add("write", load_preview_frame) 
+    channel_selection_var.trace_add("write", load_preview_frame)
+    channels_var.trace_add("write", load_preview_frame)
     # whenever threshold changes, re-bin & redraw
     thresh_offset_var.trace_add("write", update_preview)
+
 
     def update_sample_file_options(*args): 
         dir_path = dir_path_var.get() 
@@ -993,9 +997,9 @@ def main ():
                     gen_barcode = settings.generate_agg_barcode 
 
                     sort_choice = None if settings.sort=='Default' else settings.sort 
-
+                    separate_channels = True
                     try:
-                        generate_aggregate_csv(files, combined_csv_loc, gen_barcode, sort_choice)
+                        generate_aggregate_csv(files, combined_csv_loc, gen_barcode, sort_choice, separate_channels)
                         messagebox.showinfo("Success", "Combined CSV and barcodes generated!")
                     except Exception as e:
                         messagebox.showerror("Error during aggregation", str(e))

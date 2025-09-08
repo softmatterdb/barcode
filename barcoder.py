@@ -90,25 +90,10 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             id_outputs = [np.nan] * 6
             flag = np.nan
 
-        figpath = os.path.join(fig_channel_dir_name, 'Summary Graphs.png')
         if save_visualizations == True and (binarization or intensity_distribution):
-            num_figs = len(list(filter(None, [rfig, cfig])))
-            fig = plt.figure(figsize = (5 * num_figs, 5))
-            if rfig != None:
-                ax1 = rfig.axes[0]
-                ax1.figure = fig
-                fig.add_axes(ax1)
-                if num_figs == 2:
-                    ax1.set_position([1.5/10, 1/10, 4/5, 4/5])
-            if cfig != None:               
-                ax3 = cfig.axes[0]
-                ax3.figure = fig
-                fig.add_axes(ax3)
-                if num_figs == 2:
-                    ax3.set_position([11.5/10, 1/10, 4/5, 4/5])
-            plt.savefig(figpath)
-            plt.close(fig)
-        plt.close('all')
+            from visualization import create_summary_visualization
+            figpath = os.path.join(fig_channel_dir_name, 'Summary Graphs.png')
+            create_summary_visualization([rfig, cfig], figpath)
 
         non_barcode_params = [filepath, channel, flag]
         result = non_barcode_params + binarization_outputs + id_outputs + flow_outputs        
