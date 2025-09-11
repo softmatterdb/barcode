@@ -75,7 +75,7 @@ def save_binarization_plots(void_percent_gain_list: np.ndarray, island_percent_g
 
 def create_summary_visualization(figures: List[plt.Figure], output_path: str) -> None:
     """Create combined summary plot from analysis figures."""
-    if not figures or all(figures == None):
+    if not figures or all([fig == None for fig in figures]):
         return
 
     num_figs = len(figures)

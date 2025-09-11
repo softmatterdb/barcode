@@ -1,7 +1,7 @@
 from reader import read_file
 import os, yaml, time, functools, builtins, nd2
 from binarization import analyze_binarization
-from flow import analyze_optical_flow
+from analysis.optical_flow import analyze_optical_flow
 from intensity_distribution_comparison import analyze_intensity_dist
 import numpy as np
 import matplotlib
@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from itertools import pairwise
 from utils import check_channel_dim, MyException
+from utils.setup import find_files, 
 from writer import write_file, generate_aggregate_csv
 matplotlib.use('Agg')
 
@@ -168,21 +169,6 @@ def process_directory(root_dir, config_data):
     verbose = config_data['reader']['verbose']
     writer_data = config_data['writer']
     generate_barcode, _, _ = writer_data.values()
-    print = functools.partial(builtins.print, flush=True)
-    vprint = print if verbose else lambda *a, **k: None
-
-    def find_files(folder):
-        files = []
-        file_formats = [".nd2", ".tiff", ".tif"]
-        for dirpath, dirnames, filenames in os.walk(folder):
-            dirnames[:] = [d for d in dirnames]
-            for filename in filenames:
-                if filename.startswith('._'):
-                    continue
-                for file_format in file_formats:
-                    if filename.endswith(file_format):
-                        files.append(os.path.join(dirpath, filename))
-        return files
     
     files = [root_dir] if os.path.isfile(root_dir) else find_files(root_dir)
     file_count = len(files)

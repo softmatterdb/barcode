@@ -118,6 +118,32 @@ class WriterConfigGUI:
         self.save_visualizations.set(new_config.save_visualizations)
 
 @dataclass
+class ChannelConfigGUI:
+    """Auto-generated GUI wrapper for ChannelConfig"""
+    _core_config: ChannelConfig = field(default_factory=ChannelConfig)
+
+    parse_all_channels: tk.BooleanVar = field(init=False)
+    selected_channel: tk.IntVar = field(init=False)
+
+    def __post_init__(self):
+        self.parse_all_channels = tk.BooleanVar(value=self._core_config.parse_all_channels)
+        self.selected_channel = tk.IntVar(value=self._core_config.selected_channel)
+
+    @property
+    def config(self) -> ChannelConfig:
+        """Get current config from GUI values"""
+        return ChannelConfig(
+            parse_all_channels=self.parse_all_channels.get(),
+            selected_channel=self.selected_channel.get(),
+        )
+
+    def update_gui(self, new_config: ChannelConfig):
+        """Update GUI from new config values"""
+        self._core_config = new_config
+        self.parse_all_channels.set(new_config.parse_all_channels)
+        self.selected_channel.set(new_config.selected_channel)
+
+@dataclass
 class BinarizationConfigGUI:
     """Auto-generated GUI wrapper for BinarizationConfig"""
     _core_config: BinarizationConfig = field(default_factory=BinarizationConfig)
@@ -292,6 +318,7 @@ class BarcodeConfigGUI:
     """Auto-generated master GUI configuration"""
     _core_config: BarcodeConfig = field(default_factory=BarcodeConfig)
 
+    channels: ChannelConfigGUI = field(init=False)
     image_binarization_parameters: BinarizationConfigGUI = field(init=False)
     intensity_distribution_parameters: IntensityDistributionConfigGUI = field(init=False)
     optical_flow_parameters: OpticalFlowConfigGUI = field(init=False)
@@ -299,6 +326,7 @@ class BarcodeConfigGUI:
     writer: WriterConfigGUI = field(init=False)
 
     def __post_init__(self):
+        self.channels = ChannelConfigGUI(self._core_config.channels)
         self.image_binarization_parameters = BinarizationConfigGUI(self._core_config.image_binarization_parameters)
         self.intensity_distribution_parameters = IntensityDistributionConfigGUI(self._core_config.intensity_distribution_parameters)
         self.optical_flow_parameters = OpticalFlowConfigGUI(self._core_config.optical_flow_parameters)
@@ -309,6 +337,7 @@ class BarcodeConfigGUI:
     def config(self) -> BarcodeConfig:
         """Get current config from all GUI values"""
         return BarcodeConfig(
+            channels=self.channels.config,
             image_binarization_parameters=self.image_binarization_parameters.config,
             intensity_distribution_parameters=self.intensity_distribution_parameters.config,
             optical_flow_parameters=self.optical_flow_parameters.config,

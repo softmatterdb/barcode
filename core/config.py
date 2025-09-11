@@ -51,6 +51,12 @@ class AggregationConfig(BaseConfig):
     generate_comparison_barcodes: bool = False
     sort_parameter: str = "Default"  # One of the metric headers
     csv_paths_list: List[str] = field(default_factory=list)
+
+@dataclass
+class ChannelConfig(BaseConfig):
+    """Channel selection and processing configuration."""
+    parse_all_channels: bool = False
+    selected_channel: int = 0  # -3 to 4 range
     
 @dataclass
 class ReaderConfig(BaseConfig):
@@ -63,8 +69,8 @@ class ReaderConfig(BaseConfig):
 
 @dataclass
 class WriterConfig(BaseConfig):
-    generate_barcode: bool = True
-    save_rds: bool = True
+    generate_barcode: bool = False
+    save_rds: bool = False
     save_visualizations: bool = False
 
 @dataclass
@@ -91,6 +97,7 @@ class IntensityDistributionConfig(BaseConfig):
 
 @dataclass
 class BarcodeConfig(BaseConfig):
+    channels: ChannelConfig = field(default_factory=ChannelConfig)
     image_binarization_parameters: BinarizationConfig = field(default_factory=BinarizationConfig)
     intensity_distribution_parameters: IntensityDistributionConfig = field(default_factory=IntensityDistributionConfig)
     optical_flow_parameters: OpticalFlowConfig = field(default_factory=OpticalFlowConfig)
@@ -122,8 +129,93 @@ class BarcodeConfig(BaseConfig):
             print(f"Error loading YAML: {e}")
             pass
 
+        print(f"Attempting to load legacy YAML format from {filepath}")
+        try:
+            return cls._load_from_legacy_yaml(config_data)
+        except (KeyError, AssertionError) as e:
+            print(f"Error loading legacy YAML: {e}")
+            pass
+
         raise ValueError(f"Unknown YAML format in {filepath}")
-    
+
+    @classmethod
+    def _load_from_yaml(cls, config_data: Dict[str, Any]) -> "BarcodeConfig":
+        """Load configuration from YAML data."""
+
+        kwargs = {}
+        for subconfig_class_name, subconfig_data in config_data.items():
+
+            assert (
+                subconfig_class_name in cls.__dataclass_fields__
+            ), f"Unknown configuration section: {subconfig_class_name}"
+
+            field_info = cls.__dataclass_fields__[subconfig_class_name]
+            subconfig_class = field_info.default_factory
+
+            assert callable(
+                subconfig_class
+            ), f"Expected {subconfig_class_name} to be a callable class, got {subconfig_class}"
+            assert issubclass(
+                subconfig_class, BaseConfig
+            ), f"Expected {subconfig_class_name} to be a subclass of BaseConfig"
+
+            # Get the config class and create new instance from dict
+            kwargs[subconfig_class_name] = subconfig_class.from_dict(subconfig_data)
+
+        return cls(**kwargs)
+
+    @classmethod
+    def _load_from_legacy_yaml(cls, config_data: Dict[str, Any]) -> "BarcodeConfig":
+        """Load configuration from legacy YAML format."""
+
+        read: dict = config_data["reader"]
+        write: dict = config_data["writer"]
+
+        int_params: dict = config_data["intensity_distribution_parameters"]
+        flow_params: dict = config_data["optical_flow_parameters"]
+        bin_params: dict = config_data["image_binarization_parameters"]
+
+        return BarcodeConfig(
+            channels=ChannelConfig(
+                parse_all_channels=read["channel_select"] == "All",
+                selected_channel=(
+                    read["channel_select"] if read["channel_select"] != "All" else 0
+                ),
+            ),
+            reader=ReaderConfig(
+                accept_dim_images=read["accept_dim_images"],
+                accept_dim_channels=read["accept_dim_channels"],
+                binarization=read["binarization"],
+                flow=read["flow"],
+                intensity_distribution=read["intensity_distribution"],
+                verbose=read["verbose"],
+
+            ),
+            writer=WriterConfig(
+                save_visualizations=write["save_visualizations"],
+                save_rds=write["save_rds"],
+                generate_barcode=write["generate_barcode"],
+            ),
+            image_binarization_parameters=BinarizationConfig(
+                frame_step=bin_params["frame_step"],
+                percentage_frame_evaluated=bin_params["percentage_frames_evaluated"],
+                threshold_offset=bin_params["threshold_offset"],
+            ),
+            optical_flow_parameters=OpticalFlowConfig(
+                downsample=flow_params["downsample"],
+                exposure_time=flow_params["exposure_time"],
+                frame_step=flow_params["frame_step"],
+                percentage_frames_evaluated=flow_params["percentage_frames_evaluated"],
+                um_pixel_ratio=flow_params["um_pixel_ratio"],
+                win_size=flow_params["win_size"],
+            ),
+            intensity_distribution_parameters=IntensityDistributionConfig(
+                bin_size=int_params["bin_size"],
+                frame_step=int_params["frame_step"],
+                noise_threshold=int_params["noise_threshold"],
+                percentage_frames_evaluated=int_params["percentage_frames_evaluated"],            
+            ),
+        )
 
 # === CONFIG GENERATION SETUP ===
 # Define which configs should get GUI wrappers (edit this list as needed)
@@ -131,6 +223,7 @@ GUI_CONFIG_CLASSES = [
     InputConfig,
     ReaderConfig,
     WriterConfig,
+    ChannelConfig,
     BinarizationConfig,
     OpticalFlowConfig,
     IntensityDistributionConfig,

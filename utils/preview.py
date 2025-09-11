@@ -3,7 +3,7 @@ from matplotlib.widgets import Slider
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
-from utils.reader import load_first_frame
+from utils.reader import load_binarization_frame, load_intensity_frames
 
 def binarize(frame, offset_threshold):
     avg_intensity = np.mean(frame)
@@ -25,7 +25,7 @@ def main():
     if not file_path:
         print("No file selected.")
         return
-    image = load_first_frame(file_path)
+    image = load_binarization_frame(file_path)
     initial_offset = 0.1
 
     fig, ax = plt.subplots()
