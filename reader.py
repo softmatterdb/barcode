@@ -20,12 +20,14 @@ def read_file(file_path, count_list, accept_dim = False, allow_large_files = Tru
         print("File size is too large -- this program does not process files larger than 5 GB.")
         return None
 
-    def check_first_frame_dim(file):
-        min_intensity = np.min(file[0])
-        mean_intensity = np.mean(file[0])
-        return 2 * np.exp(-1) * mean_intensity <= min_intensity
+    def check_channel_dim(file):
+        f1_min_intensity = np.min(file[0])
+        f1_mean_intensity = np.mean(file[0])
+        f2_min_intensity = np.min(file[-1])
+        f2_mean_intensity = np.mean(file[-1])
+        return (2 * np.exp(-1) * f1_mean_intensity <= f1_min_intensity) and (2 * np.exp(-1) * f2_mean_intensity <= f2_min_intensity)
     
-    if file_path.endswith('.tif') or file_path.endswith('.tiff'):
+    if file_path.endswith(('.tif', '.tiff')):
         file = iio.imread(file_path)
         file = np.reshape(file, (file.shape + (1,))) if len(file.shape) == 3 else file
         if file.shape[3] != min(file.shape):
@@ -57,7 +59,7 @@ def read_file(file_path, count_list, accept_dim = False, allow_large_files = Tru
         print('Empty file: can not process, skipping to next file...')
         return None
     
-    if accept_dim == False and check_first_frame_dim(file) == True:
+    if accept_dim == False and check_channel_dim(file) == True:
         print(file_path + 'is too dim, skipping to next file...')
         return None
         
