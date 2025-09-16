@@ -3,7 +3,7 @@ from matplotlib.widgets import Slider
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog
-from utils.reader import load_first_frame
+from utils.reader import load_binarization_frame
 
 def binarize(frame, offset_threshold):
     avg_intensity = np.mean(frame)

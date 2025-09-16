@@ -7,7 +7,7 @@ import argparse
 
 import numpy as np
 from utils.preview import binarize
-from utils.reader import load_first_frame 
+from utils.reader import load_binarization_frame
 from PIL import Image, ImageTk 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
@@ -624,7 +624,7 @@ def main ():
             update_preview()
             return
         try:
-            preview_data["frame"] = load_first_frame(path)
+            preview_data["frame"] = load_binarization_frame(path)
         except Exception as e:
             print(f"[Preview] couldn't load first frame: {e}")
             preview_data["frame"] = None
@@ -759,17 +759,6 @@ def main ():
     id_f_step_spin.grid(row=row_c, column=1, padx=5, pady=5)
     row_c += 1
 
-    tk.Label(id_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
-    id_pf_eval_spin = ttk.Spinbox(
-        id_frame, from_=0.01, to=0.25,
-        increment=0.01,
-        textvariable=id_pf_evaluation_var,
-        format="%.2f",
-        width=7
-    )
-    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
-    row_c += 1
-
     tk.Label(id_frame, text="Distribution Number of Bins").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
     id_pf_eval_spin = ttk.Spinbox(
         id_frame, from_=100, to=500,
@@ -786,6 +775,17 @@ def main ():
         increment=1e-5,
         textvariable=noise_threshold_var,
         format="%.5f",
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    row_c += 1
+
+    tk.Label(id_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=0.01, to=0.25,
+        increment=0.01,
+        textvariable=id_pf_evaluation_var,
+        format="%.2f",
         width=7
     )
     id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)

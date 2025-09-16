@@ -49,8 +49,3 @@ def find_analysis_frames(file, step_size):
     if frame_indices[-1] != image_length - 1:
         frame_indices.append(image_length - 1)
     return frame_indices, step_size
-
-def check_channel_dim(image):
-    min_intensity = np.min(image)
-    mean_intensity = np.mean(image)
-    return 2 * np.exp(-1) * mean_intensity <= min_intensity

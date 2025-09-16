@@ -1,4 +1,4 @@
-from reader import read_file
+from utils.reader import read_file, check_channel_dim
 import os, yaml, time, functools, builtins, nd2
 from binarization import analyze_binarization
 from flow import analyze_optical_flow
@@ -8,7 +8,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from itertools import pairwise
-from utils import check_channel_dim, MyException
 from writer import write_file, generate_aggregate_csv
 matplotlib.use('Agg')
 
@@ -41,14 +40,14 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             pf_eval = binarization_params['percentage_frames_evaluated']
             binning_factor = 2
             try:
-                rfig, binarization_outputs = analyze_binarization(file, fig_channel_dir_name, channel, thresh_offset, frame_step, pf_eval, binning_factor, save_visualizations, save_rds, verbose)
+                binarization_figure, binarization_outputs = analyze_binarization(file, fig_channel_dir_name, channel, thresh_offset, frame_step, pf_eval, binning_factor, save_visualizations, save_rds, verbose)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
                     log_file.write(f"File: {file_path}, Module: Binarization, Exception: {str(e)}\n")
-                rfig = None
+                binarization_figure = None
                 binarization_outputs = [np.nan] * 7
         else:
-            rfig = None
+            binarization_figure = None
             binarization_outputs = [np.nan] * 7
         if optical_flow:
             downsample = optical_flow_params['downsample']
@@ -78,30 +77,30 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             pf_eval = intensity_dist_params['percentage_frames_evaluated']
             frame_step = intensity_dist_params['frame_step']
             try:
-                cfig, id_outputs, flag = analyze_intensity_dist(file, fig_channel_dir_name, channel, pf_eval, frame_step, bin_size, noise_threshold, save_visualizations, save_rds, verbose)
+                intensity_figure, id_outputs, flag = analyze_intensity_dist(file, fig_channel_dir_name, channel, pf_eval, frame_step, bin_size, noise_threshold, save_visualizations, save_rds, verbose)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
                     log_file.write(f"File: {file_path}, Module: Intensity Distribution, Exception: {str(e)}\n")
-                cfig = np.nan
+                intensity_figure = np.nan
                 id_outputs = [np.nan] * 6
                 flag = np.nan
         else:
-            cfig = None
+            intensity_figure = None
             id_outputs = [np.nan] * 6
             flag = np.nan
 
         figpath = os.path.join(fig_channel_dir_name, 'Summary Graphs.png')
         if save_visualizations == True and (binarization or intensity_distribution):
-            num_figs = len(list(filter(None, [rfig, cfig])))
+            num_figs = len(list(filter(None, [binarization_figure, intensity_figure])))
             fig = plt.figure(figsize = (5 * num_figs, 5))
-            if rfig != None:
-                ax1 = rfig.axes[0]
+            if binarization_figure != None:
+                ax1 = binarization_figure.axes[0]
                 ax1.figure = fig
                 fig.add_axes(ax1)
                 if num_figs == 2:
                     ax1.set_position([1.5/10, 1/10, 4/5, 4/5])
-            if cfig != None:               
-                ax3 = cfig.axes[0]
+            if intensity_figure != None:               
+                ax3 = intensity_figure.axes[0]
                 ax3.figure = fig
                 fig.add_axes(ax3)
                 if num_figs == 2:
@@ -249,7 +248,7 @@ def process_directory(root_dir, config_data):
         write_file(csv_filepath, barcode_data)
     channel_select = config_data['reader']['channel_select']
     separate_channel = bool(channel_select == "All")
-    # generate_aggregate_csv([csv_filepath], csv_filepath, generate_barcode, separate_channel=separate_channel)
+    generate_aggregate_csv([csv_filepath], csv_filepath, generate_barcode, separate_channel=separate_channel)
     end_folder_time = time.time()
     elapsed_folder_time = reformat_time(end_folder_time - start_folder_time)
     vprint('Time Elapsed to Process Folder:', elapsed_folder_time)
