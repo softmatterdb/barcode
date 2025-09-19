@@ -1,22 +1,18 @@
 import os, csv
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import matplotlib.backends
 import numpy as np
-import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
-headers = [
+def write_file(output_filepath, data):
+    headers = [
         'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
         'Mode Skewness Change', 'Mean Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
-
-def write_file(output_filepath, data):
-    global headers
     if data:
         with open(output_filepath, 'w', newline='', encoding="utf-8") as csvfile:
             csvwriter = csv.writer(csvfile)
@@ -26,7 +22,14 @@ def write_file(output_filepath, data):
                 csvwriter.writerow(entry)
 
 def generate_aggregate_csv(csv_list, csv_loc, gen_barcode, sort = None, separate_channel = False):
-    global headers
+    print("Aggregation")
+    headers = [
+        'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
+        'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
+        'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
+        'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
+        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mean Flow Direction', 'Flow Directional Spread']
     if gen_barcode:
         combined_barcode_loc = os.path.join(os.path.dirname(csv_loc), f'{os.path.basename(csv_loc).removesuffix('.csv')} Barcode')
         
@@ -92,7 +95,13 @@ def add_units(metric):
     return metric + units[metric]
 
 def generate_comparison_barcodes(csv_list):
-    global headers
+    headers = [
+        'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
+        'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
+        'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
+        'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
+        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mean Flow Direction', 'Flow Directional Spread']
     num_params = len(headers) - 3
     norms = []
     datas = []
@@ -168,7 +177,14 @@ def generate_comparison_barcodes(csv_list):
     
 
 def gen_combined_barcode(data, figpath, sort = None, separate = False):
-    global headers
+    print("Combining Barcodes")
+    headers = [
+        'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
+        'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
+        'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
+        'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
+        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mean Flow Direction', 'Flow Directional Spread']
     num_params = len(headers) - 3
     if len(data.shape) <= 1:
         data = np.reshape(data, (1, data.shape[0]))
