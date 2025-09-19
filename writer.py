@@ -22,7 +22,6 @@ def write_file(output_filepath, data):
                 csvwriter.writerow(entry)
 
 def generate_aggregate_csv(csv_list, csv_loc, gen_barcode, sort = None, separate_channel = False):
-    print("Aggregation")
     headers = [
         'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
@@ -177,7 +176,6 @@ def generate_comparison_barcodes(csv_list):
     
 
 def gen_combined_barcode(data, figpath, sort = None, separate = False):
-    print("Combining Barcodes")
     headers = [
         'Filepath', 'Channel', 'Flags', 'Connectivity', 'Maximum Island Area', 'Maximum Void Area', 
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
