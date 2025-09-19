@@ -1,24 +1,15 @@
-import sys, yaml, os 
+import sys, yaml, os, argparse, threading
 from barcoder import process_directory
 from writer import generate_aggregate_csv
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox 
-import argparse 
+from tkinter import *
+from tkinter import ttk, filedialog, messagebox
 
 import numpy as np
 from utils.preview import binarize
 from utils.reader import load_binarization_frame
-from PIL import Image, ImageTk 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
-
-import cv2 as cv 
-from flow import groupAvg 
-
-import threading 
-
-from tkinter import *
-import traceback
 
 
 def set_config_data(args = None):

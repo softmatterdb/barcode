@@ -6,7 +6,6 @@ from intensity_distribution_comparison import analyze_intensity_dist
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib import gridspec
 from itertools import pairwise
 from writer import write_file, generate_aggregate_csv
 matplotlib.use('Agg')
@@ -25,9 +24,9 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None
 
-    def check(file_path, channel, binarization, optical_flow, intensity_distribution, binarization_params, optical_flow_params, intensity_dist_params, fail_file_loc):
+    def check(filename, channel, binarization, optical_flow, intensity_distribution, binarization_params, optical_flow_params, intensity_dist_params, fail_file_loc):
         flag = 0
-        figure_dir_name = remove_extension(filepath) + ' BARCODE Output'
+        figure_dir_name = remove_extension(filename) + ' BARCODE Output'
         fig_channel_dir_name = os.path.join(figure_dir_name, 'Channel ' + str(channel))
         if not os.path.exists(figure_dir_name):
             os.makedirs(figure_dir_name)
@@ -43,7 +42,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
                 binarization_figure, binarization_outputs = analyze_binarization(file, fig_channel_dir_name, channel, thresh_offset, frame_step, pf_eval, binning_factor, save_visualizations, save_rds, verbose)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
-                    log_file.write(f"File: {file_path}, Module: Binarization, Exception: {str(e)}\n")
+                    log_file.write(f"File: {filename}, Module: Binarization, Exception: {str(e)}\n")
                 binarization_figure = None
                 binarization_outputs = [np.nan] * 7
         else:
@@ -55,8 +54,8 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             win_size = optical_flow_params['win_size']
             pf_eval = optical_flow_params['percentage_frames_evaluated']
             # Automatically reads ND2 file metadata for frame interval and micron-pixel-ratio
-            if nd2.is_supported_file(filepath):
-                with nd2.ND2File(filepath) as ndfile:
+            if nd2.is_supported_file(filename):
+                with nd2.ND2File(filename) as ndfile:
                     times = ndfile.events(orient = 'list')['Time [s]']
                     exposure_time = np.array([y - x for x, y in pairwise(times)]).mean()
                     um_pix_ratio = 1/(ndfile.voxel_size()[0])
@@ -67,7 +66,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
                 flow_outputs = analyze_optical_flow(file, fig_channel_dir_name, channel, frame_step, downsample, exposure_time, um_pix_ratio, pf_eval, save_visualizations, save_rds, verbose, win_size)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
-                    log_file.write(f"File: {file_path}, Module: Optical Flow, Exception: {str(e)}\n")
+                    log_file.write(f"File: {filename}, Module: Optical Flow, Exception: {str(e)}\n")
                 flow_outputs = [np.nan] * 4
         else:
             flow_outputs = [np.nan] * 4
@@ -80,7 +79,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
                 intensity_figure, id_outputs, flag = analyze_intensity_dist(file, fig_channel_dir_name, channel, pf_eval, frame_step, bin_size, noise_threshold, save_visualizations, save_rds, verbose)
             except Exception as e:
                 with open(fail_file_loc, "a", encoding="utf-8") as log_file:
-                    log_file.write(f"File: {file_path}, Module: Intensity Distribution, Exception: {str(e)}\n")
+                    log_file.write(f"File: {filename}, Module: Intensity Distribution, Exception: {str(e)}\n")
                 intensity_figure = np.nan
                 id_outputs = [np.nan] * 6
                 flag = np.nan
@@ -109,7 +108,7 @@ def execute_htp(filepath, config_data, fail_file_loc, count, total):
             plt.close(fig)
         plt.close('all')
 
-        non_barcode_params = [filepath, channel, flag]
+        non_barcode_params = [filename, channel, flag]
         result = non_barcode_params + binarization_outputs + id_outputs + flow_outputs        
         vprint('Channel Screening Completed')
         return result

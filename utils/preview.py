@@ -25,7 +25,7 @@ def main():
     if not file_path:
         print("No file selected.")
         return
-    image = load_first_frame(file_path)
+    image = load_binarization_frame(file_path)
     initial_offset = 0.1
 
     fig, ax = plt.subplots()

@@ -4,7 +4,7 @@ import matplotlib.ticker as ticker
 import csv, os, functools, builtins
 from skimage.measure import label, regionprops
 from scipy import ndimage
-from utils import MyException, inv, groupAvg, average_largest, find_analysis_frames
+from utils import inv, groupAvg, average_largest, find_analysis_frames
 import matplotlib
 matplotlib.use('Agg')
 
