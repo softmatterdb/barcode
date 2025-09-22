@@ -17,18 +17,15 @@
   - [Output Files](#output-files)
 
 # Installation
-Navigate to the Releases Tab of the Github Repository and download the ZIP file corresponding to the operating system that you are using. BARCODE has been tested on macOS and Windows, and has apps for both operating system.
+Navigate to the Releases Tab of the Github Repository and download the ZIP file corresponding to the operating system that you are using. BARCODE has been tested on macOS 14, 15, and 16, as well as on Windows 10 and 11, and has apps for both operating system. The download + installation should take under a minute.
 
 Otherwise, if you are on Linux, or would like to be able to edit the source code, you can clone this repository and edit the source files directly. To install the required packages, you can use PIP to install them using the following command: ```pip install -r requirements.txt```. Keep in mind that this code was developed in Python 3.12 -- versions of Python prior to 3.12 may not be able to run this program from the source code.
 # Usage
 ## Data Preparation
 Currently, BARCODE only takes in TIFF and ND2 file formats. If files you wish to process are not in either format, you will need to convert them to a TIFF file using ImageJ/FIJI.- [Installation](#installation)
 
-
-Additionally, due to the development of BARCODE as a high throughput classification program, BARCODE only takes input files of 5 GB or less. If the file is any larger, it is recommended that you crop your video and run that through the program.
-
 ## Running BARCODE & User Settings
-Click on the app file (or the executable if on Windows). From there, a window will appear with the user interface. The user inputs are described below. When finished specifying the operational settings, click "Run" to begin the BARCODE program.
+Click on the app file to open the program. From there, a window will appear with the user interface. The user inputs are described below. When finished specifying the operational settings, click "Run" to begin the BARCODE program. A more detailed tutorial for running BARCODE, including test data, is included [here](https://www.livingbam.org/barcode-tutorial). It should take 10-15 seconds on a standard desktop computer to analyze the test data using the software.
 
 ### Execution Settings
 | Setting Name                      | Description                                                                                                                                                                                                                                           |
@@ -44,8 +41,8 @@ Click on the app file (or the executable if on Windows). From there, a window wi
 | Include Dim Files | Run the program on files that are dim (defined as videos where the mean pixel intensity is less than $\frac{2}{e}$ times the minimum pixel intensity) -- files meeting this criteria are labeled in the BARCODE CSV file under the Flags section with a numerical label of 1 |
 | Include Dim Channels | Run the program on channels that are dim (defined in "Include Dim Files" setting) -- video channels meeting this criteria are labeled in the BARCODE CSV file under the Flags section (described in "Include Dim Files" setting) |
 | Verbose | Prints more details while running the program to output display, including modules run on videos, time to analyze files, etc. |
-| Save Data Visualizations | |
-| Save Reduced Data Structures | |
+| Save Data Visualizations | Saves representations of binarization, optical flow, and intensity distribution branches as .png files for further analysis |
+| Save Reduced Data Structures | Saves reduced data structures used to perform computation of metrics |
 | Generate Dataset Barcode | Save a color "barcode" visualization of the entire dataset; useful for visualizing differences between videos |
 | Configuration File | Select a Configuration YAML file; overwrite all settings selected by the user with settings from input YAML file |
 
