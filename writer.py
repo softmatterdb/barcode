@@ -11,7 +11,7 @@ def write_file(output_filepath, data):
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
-        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mode Skewness Change', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
     if data:
         with open(output_filepath, 'w', newline='', encoding="utf-8") as csvfile:
@@ -27,7 +27,7 @@ def generate_aggregate_csv(csv_list, csv_loc, gen_barcode, sort = None, separate
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
-        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mode Skewness Change', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
     if gen_barcode:
         combined_barcode_loc = os.path.join(os.path.dirname(csv_loc), f'{os.path.basename(csv_loc).removesuffix('.csv')} Barcode')
@@ -89,7 +89,7 @@ def add_units(metric):
              'Initial 2nd Maximum Island Area': fov_percent_unit, 'Maximum Kurtosis': unit_less, 
              'Maximum Median Skewness': unit_less, 'Maximum Mode Skewness': unit_less,
              'Kurtosis Change': unit_less, 'Median Skewness Change': unit_less, 
-             'Mode Skewness Change': unit_less, 'Mean Speed': speed_unit, 'Speed Change': speed_unit,
+             'Mode Skewness Change': unit_less, 'Speed': speed_unit, 'Speed Change': speed_unit,
              'Mean Flow Direction': directional_unit, 'Flow Directional Spread': directional_unit}
     return metric + units[metric]
 
@@ -99,7 +99,7 @@ def generate_comparison_barcodes(csv_list):
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
-        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mode Skewness Change', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
     num_params = len(headers) - 3
     norms = []
@@ -181,7 +181,7 @@ def gen_combined_barcode(data, figpath, sort = None, separate = False):
         'Island Area Change', 'Void Area Change', 'Initial Maximum Island Area', 
         'Initial 2nd Maximum Island Area', 'Maximum Kurtosis', 'Maximum Median Skewness', 
         'Maximum Mode Skewness', 'Kurtosis Change', 'Median Skewness Change', 
-        'Mode Skewness Change', 'Mean Speed', 'Speed Change',
+        'Mode Skewness Change', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
     num_params = len(headers) - 3
     if len(data.shape) <= 1:
@@ -198,7 +198,7 @@ def gen_combined_barcode(data, figpath, sort = None, separate = False):
             'Island Area Change': 3, 'Void Area Change': 4, 'Initial Maximum Island Area': 5, 
             'Initial 2nd Maximum Island Area': 6, 'Maximum Kurtosis': 7, 'Maximum Median Skewness': 8, 
             'Maximum Mode Skewness': 9, 'Kurtosis Change': 10, 'Median Skewness Change': 11, 
-            'Mode Skewness Change': 12, 'Mean Speed': 13, 'Speed Change': 14,
+            'Mode Skewness Change': 12, 'Speed': 13, 'Speed Change': 14,
             'Mean Flow Direction': 15, 'Flow Directional Spread': 16}
     if sort != None:
         sort_idx = params.get(sort) + 2
