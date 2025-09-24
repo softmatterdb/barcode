@@ -1,6 +1,4 @@
 import numpy as np
-from scipy.stats import mode
-
 # Global verbose setting
 _VERBOSE = False
 
@@ -9,7 +7,6 @@ def set_verbose(verbose: bool):
     global _VERBOSE
     _VERBOSE = verbose
 
-
 def vprint(*args, **kwargs):
     """Global verbose print function."""
     if _VERBOSE:
@@ -17,6 +14,9 @@ def vprint(*args, **kwargs):
 
 class MyException(Exception):
     pass
+
+def normalize_counts(count): 
+    return count / count.sum()
 
 def inv(arr):
     ones_arr = np.ones(shape = arr.shape)
@@ -35,32 +35,10 @@ def average_largest(lst, percent = 0.1):
     lst.sort(reverse=True)
     length = len(lst)
     top_percent = int(np.ceil(length * percent))
-    return np.mean(lst[0:top_percent])
+    return np.nanmean(lst[0:top_percent])
 
-def calc_mode(frame):
-    mode_result = mode(frame.flatten(), keepdims=False)
-    mode_intensity = mode_result.mode if isinstance(mode_result.mode, np.ndarray) else np.array([mode_result.mode])
-    mode_intensity = mode_intensity[0] if mode_intensity.size > 0 else np.nan
-    return mode_intensity
-
-def mode_skewness(frame):
-    mean_intensity = np.mean(frame)
-    mode_intensity = calc_mode(frame)
-    stdev_intensity = np.std(frame)
-    return (mean_intensity - mode_intensity)/stdev_intensity
-
-def median_skewness(frame):
-    mean_intensity = np.mean(frame)
-    median_intensity = np.median(frame)
-    stdev_intensity = np.std(frame)
-    return 3 * (mean_intensity - median_intensity)/stdev_intensity
-
-def calc_frame_metric(metric, data):
-    mets = []
-    for i in range(len(data)):
-        met = metric(data[i].flatten())
-        mets.append(met)
-    return mets
+def flatten(xss):
+    return np.array([x for xs in xss for x in xs])
 
 def find_analysis_frames(file, step_size):
     image_length = len(file)
@@ -71,8 +49,3 @@ def find_analysis_frames(file, step_size):
     if frame_indices[-1] != image_length - 1:
         frame_indices.append(image_length - 1)
     return frame_indices, step_size
-
-def check_channel_dim(image):
-    min_intensity = np.min(image)
-    mean_intensity = np.mean(image)
-    return 2 * np.exp(-1) * mean_intensity <= min_intensity

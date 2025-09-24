@@ -1,23 +1,15 @@
-import sys, yaml, os 
+import sys, yaml, os, argparse, threading
 from barcoder import process_directory
 from writer import generate_aggregate_csv
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox 
-import argparse 
+from tkinter import *
+from tkinter import ttk, filedialog, messagebox
 
 import numpy as np
-from preview_binarization import load_first_frame, binarize 
-from PIL import Image, ImageTk 
+from utils.preview import binarize
+from utils.reader import load_binarization_frame
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
-
-import cv2 as cv 
-from flow import groupAvg 
-
-import threading 
-
-from tkinter import *
-import traceback
 
 
 def set_config_data(args = None):
@@ -50,7 +42,7 @@ def set_config_data(args = None):
                 'percentage_frames_evaluated':float(args.ib_pf_evaluation),
                 'threshold_offset':float(args.thresh_offset),
             }
-        if reader_data['flow']:
+        if reader_data['optical_flow']:
             flow_data = {
                 'downsample':int(args.downsample),
                 'exposure_time':float(args.exposure_time),
@@ -62,7 +54,9 @@ def set_config_data(args = None):
 
         if reader_data['intensity_distribution']:
             intensity_distribution_data = {
+                'bin_size':int(args.hist_bin_size),
                 'frame_step':int(args.id_f_step),
+                'noise_threshold':float(args.noise_threshold),
                 'percentage_frames_evaluated':float(args.id_pf_evaluation),
             }
 
@@ -196,7 +190,9 @@ def main ():
     of_pf_evaluation_var = tk.DoubleVar(value=0.05) # --of_pf_evaluation
 
     # ---- Intensity Distribution Settings ----
+    bin_size_var = tk.IntVar(value = 300) # --hist_bin_size
     id_f_step_var    = tk.IntVar(value=10)    # --id_f_step
+    noise_threshold_var = tk.DoubleVar(value=5e-4) # --noise_threshold
     id_pf_evaluation_var = tk.DoubleVar(value=0.05) # --id_pf_evaluation
 
     # ---- Barcode Generator + CSV Aggregator ----
@@ -488,7 +484,6 @@ def main ():
     
     tick_values = [round(-1.00+i*0.25, 2) for i in range(9)]
     for i, val in enumerate(tick_values):
-        #scale_frame.columnconfigure(i, weight=1)
         lbl = tk.Label(scale_frame, text=f"{val:.2f}")
         lbl.grid(row=1, column=i+1, sticky="n")
     row_b += 1
@@ -620,7 +615,7 @@ def main ():
             update_preview()
             return
         try:
-            preview_data["frame"] = load_first_frame(path)
+            preview_data["frame"] = load_binarization_frame(path)
         except Exception as e:
             print(f"[Preview] couldn't load first frame: {e}")
             preview_data["frame"] = None
@@ -721,7 +716,7 @@ def main ():
     um_pixel_spin.grid(row=row_f, column=1, padx=5, pady=5)
     row_f += 1
 
-    tk.Label(flow_frame, text="Exposure Time (1 ms - 1 hour)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
+    tk.Label(flow_frame, text="Exposure Time [seconds] (1 ms - 1 hour)").grid(row=row_f, column=0, sticky="w", padx=5, pady=5)
     frame_interval_spin = ttk.Spinbox(
         flow_frame, from_=10**-3, to=3.6 * 10**3,
         increment=10**-3,
@@ -753,6 +748,27 @@ def main ():
         width=7
     )
     id_f_step_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    row_c += 1
+
+    tk.Label(id_frame, text="Distribution Number of Bins").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=100, to=500,
+        increment=1,
+        textvariable=bin_size_var,
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
+    row_c += 1
+
+    tk.Label(id_frame, text="Distribution Noise Threshold").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
+    id_pf_eval_spin = ttk.Spinbox(
+        id_frame, from_=1e-5, to=1e-2,
+        increment=1e-5,
+        textvariable=noise_threshold_var,
+        format="%.5f",
+        width=7
+    )
+    id_pf_eval_spin.grid(row=row_c, column=1, padx=5, pady=5)
     row_c += 1
 
     tk.Label(id_frame, text="Fraction of Frames Evaluated (0.01–0.25)").grid(row=row_c, column=0, sticky="w", padx=5, pady=5)
@@ -904,7 +920,9 @@ def main ():
                 exposure_time   = exposure_time_var.get()
                 of_pf_evaluation = of_pf_evaluation_var.get()
                 
+                hist_bin_size = bin_size_var.get()
                 id_f_step = id_f_step_var.get()
+                noise_threshold = noise_threshold_var.get()
                 id_pf_evaluation    = id_pf_evaluation_var.get()
 
                 csv_paths        = csv_paths_list[:]  # copy of the list
@@ -941,7 +959,9 @@ def main ():
                 settings.exposure_time   = exposure_time
                 settings.of_pf_evaluation = of_pf_evaluation
 
+                settings.hist_bin_size = hist_bin_size
                 settings.id_f_step = id_f_step
+                settings.noise_threshold = noise_threshold
                 settings.id_pf_evaluation    = id_pf_evaluation
 
                 # csv_paths as a list of paths 
@@ -1017,7 +1037,9 @@ def main ():
                         settings.of_pf_evaluation = of_pf_evaluation
 
 
+                        settings.hist_bin_size = hist_bin_size
                         settings.id_f_step = id_f_step
+                        settings.noise_threshold = noise_threshold
                         settings.id_pf_evaluation    = id_pf_evaluation
 
                         config_data = set_config_data(settings)

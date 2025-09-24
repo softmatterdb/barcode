@@ -4,7 +4,7 @@ import matplotlib.ticker as ticker
 import csv, os, functools, builtins
 from skimage.measure import label, regionprops
 from scipy import ndimage
-from utils import MyException, inv, groupAvg, average_largest, find_analysis_frames
+from utils import inv, groupAvg, average_largest, find_analysis_frames
 import matplotlib
 matplotlib.use('Agg')
 
@@ -70,7 +70,7 @@ def track_void(image, name, threshold, frame_indices, binning_number, save_visua
 
     for i in frame_indices:
         new_image = binarize(image[i], threshold)
-        new_frame = groupAvg(new_image, binning_number, bin_mask=True)
+        new_frame = groupAvg(new_image, binning_number, bin_mask = True)
         
         if i in save_spots and save_visualization:
             compare_fig, comp_axs = plt.subplots(ncols = 2, figsize=(10, 5))

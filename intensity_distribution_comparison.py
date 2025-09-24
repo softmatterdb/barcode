@@ -1,15 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv, os, functools, builtins
-from scipy.stats import mode, kurtosis
-from utils import average_largest, calc_mode, median_skewness, mode_skewness, calc_frame_metric, find_analysis_frames
+from utils import average_largest, find_analysis_frames
+from utils.intensity_distribution import mean, frame_mode, median_skewness, mode_skewness, kurtosis, calc_frame_metric, histogram
 
-def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, save_visualization, save_rds, verbose):
+def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, bin_number, noise_threshold, save_visualization, save_rds, verbose):
     flag = 0 # No flags have been tripped by the module
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None
     vprint('Beginning Intensity Distribution Analysis')
-
     image = file[:,:,:,channel]
     if (image == 0).all(): # If image is blank, then end program early
         return None, [np.nan] * 6, 1
@@ -23,59 +22,55 @@ def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, s
     fig, ax = plt.subplots(figsize=(5,5))
 
     # Check for saturation, posts saturation flag (flag = 2) if mode and maximal intensity values are same
-    flag == 2 if all([np.max(frame) == calc_mode(frame) for frame in frames_data]) else 0
-
+    flag == 2 if all([np.max(frame) == frame_mode(frame, bin_number, noise_threshold) for frame in frames_data]) else 0
     if save_rds:
-        filename = os.path.join(name, 'IntensityDistribution.csv')
+        filename = os.path.join(name, f'IntensityDistribution.csv')
         with open(filename, "w") as myfile:
             csvwriter = csv.writer(myfile)
             for frame_idx in frame_indices:
                 csvwriter.writerow([f'Frame {frame_idx}'])
                 frame_data = image[frame_idx]
-                frame_values, frame_counts = np.unique(frame_data, return_counts = True)
+                frame_counts, frame_values = histogram(frame_data, bin_number, noise_threshold)
                 csvwriter.writerow(frame_values)
                 csvwriter.writerow(frame_counts)
                 csvwriter.writerow([])
-                    
-    i_kurt = calc_frame_metric(kurtosis, i_frames_data)
-    f_kurt = calc_frame_metric(kurtosis, f_frames_data)
-    tot_kurt = calc_frame_metric(kurtosis, frames_data)
 
-    i_median_skew = calc_frame_metric(median_skewness, i_frames_data)
-    f_median_skew = calc_frame_metric(median_skewness, f_frames_data)
-    tot_median_skew = calc_frame_metric(median_skewness, frames_data)
+    i_kurt = calc_frame_metric(kurtosis, i_frames_data, bin_number, noise_threshold)
+    f_kurt = calc_frame_metric(kurtosis, f_frames_data, bin_number, noise_threshold)
+    total_kurt = calc_frame_metric(kurtosis, frames_data, bin_number, noise_threshold)
 
-    i_mode_skew = calc_frame_metric(mode_skewness, i_frames_data)
-    f_mode_skew = calc_frame_metric(mode_skewness, f_frames_data)
-    tot_mode_skew = calc_frame_metric(mode_skewness, frames_data)
+    i_median_skew = calc_frame_metric(median_skewness, i_frames_data, bin_number, noise_threshold)
+    f_median_skew = calc_frame_metric(median_skewness, f_frames_data, bin_number, noise_threshold)
+    total_median_skew = calc_frame_metric(median_skewness, frames_data, bin_number, noise_threshold)
+
+    i_mode_skew = calc_frame_metric(mode_skewness, i_frames_data, bin_number, noise_threshold)
+    f_mode_skew = calc_frame_metric(mode_skewness, f_frames_data, bin_number, noise_threshold)
+    total_mode_skew = calc_frame_metric(mode_skewness, frames_data, bin_number, noise_threshold)
 
     # Take the largest ten percent of each metric and average them
-    max_kurt = average_largest(tot_kurt)
-    max_median_skew = average_largest(tot_median_skew)
-    max_mode_skew = average_largest(tot_mode_skew)
+    max_kurt = average_largest(total_kurt)
+    max_median_skew = average_largest(total_median_skew)
+    max_mode_skew = average_largest(total_mode_skew)
 
     # Take the difference of the average between the first and last 10% of frames
-    kurt_diff = np.mean(np.array(f_kurt)) - np.mean(np.array(i_kurt))
-    median_skew_diff = np.mean(np.array(f_median_skew)) - np.mean(np.array(i_median_skew))
-    mode_skew_diff = np.mean(np.array(f_mode_skew)) - np.mean(np.array(i_mode_skew))
+    kurt_diff = np.nanmean(np.array(f_kurt)) - np.nanmean(np.array(i_kurt))
+    median_skew_diff = np.nanmean(np.array(f_median_skew)) - np.nanmean(np.array(i_median_skew))
+    mode_skew_diff = np.nanmean(np.array(f_mode_skew)) - np.nanmean(np.array(i_mode_skew))
 
     if save_visualization:
         # Plot the intensity distributions for the first and last frame for comparison
         i_frame = image[0]
         f_frame = image[-1]
         max_px_intensity = 1.1*np.max(image)
-        bins_width = 3        
-        set_bins = np.arange(0, max_px_intensity, bins_width)
-        i_count, bins = np.histogram(i_frame.flatten(), bins=set_bins, density=True)
-        f_count, bins = np.histogram(f_frame.flatten(), bins=set_bins, density=True)
-        center_bins = (bins[1] - bins[0])/2
-        plt_bins = bins[0:-1] + center_bins
-            
-        i_mean = np.mean(i_frame)
-        f_mean = np.mean(f_frame)
+        i_count, i_bins = histogram(i_frame, bin_number, noise_threshold)
 
-        ax.plot(plt_bins[::10], i_count[::10], '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
-        ax.plot(plt_bins[::10], f_count[::10], 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
+        f_count, f_bins = histogram(f_frame, bin_number, noise_threshold)
+            
+        i_mean = mean(i_bins, i_count)
+        f_mean = mean(f_bins, f_count)
+
+        ax.plot(i_bins, i_count, '^-', ms=4, c='darkred', alpha=0.6, label= "Frame 0 Intensity Distribution")
+        ax.plot(f_bins, f_count, 'v-', ms=4, c='purple',   alpha=0.6, label= f"Frame {len(image) - 1} Intensity Distribution")
         ax.axvline(x=i_mean, ms = 4, c = 'darkred', alpha=1, label="Frame 0 Mean")
         ax.axvline(x=f_mean, ms = 4, c = 'purple', alpha=1, label=f"Frame {len(image) - 1} Mean")
         ax.axhline(0, color='dimgray', alpha=0.6)
