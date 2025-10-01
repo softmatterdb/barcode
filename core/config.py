@@ -102,6 +102,7 @@ class BinarizationConfig(BaseConfig):
     frame_stop_percent: float = 1.0  # 0.9 to 1.0
     window_size_var: float = 15
     window_size_enabled: bool = False
+    binning: int = 2 
 
 
 @dataclass

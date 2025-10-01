@@ -15,7 +15,7 @@ from utils.setup import (
     discover_files,
     setup_paths,
 )
-from utils.writer import gen_combined_barcode, results_to_csv
+from utils.writer import gen_combined_barcode, gen_extended_barcode, results_to_csv
 
 
 def determine_channels_to_process(
@@ -51,10 +51,12 @@ def save_analysis_results(
     if is_single_file:
         csv_path = os.path.join(base_path, base_name + " summary.csv")
         barcode_path = os.path.join(base_path, base_name + " summary barcode")
+        barcode_extended_path = os.path.join(base_path, base_name + " summary extended barcode")
         settings_path = os.path.join(base_path, base_name + " settings.yaml")
     else:
         csv_path = os.path.join(base_path, base_name + " Summary.csv")
         barcode_path = os.path.join(base_path, base_name + "_Summary Barcode")
+        barcode_extended_path = os.path.join(base_path, base_name + "_Summary Extended Barcode")
         settings_path = os.path.join(base_path, base_name + " Settings.yaml")
 
     # Save CSV
@@ -83,10 +85,13 @@ def save_analysis_results(
     if config.output.generate_dataset_barcode and all_results:
         try:
             # Multiple files: use all channels
+
             if not is_single_file and config.channels.parse_all_channels:
                 gen_combined_barcode(all_results, barcode_path, separate_channels=False)
+                gen_extended_barcode(all_results, barcode_extended_path, separate_channels=False)
             else:
                 gen_combined_barcode(all_results, barcode_path)
+                gen_extended_barcode(all_results, barcode_extended_path)
 
         except Exception as e:
             with open(ff_loc, "a", encoding="utf-8") as log_file:

@@ -9,7 +9,7 @@ from skimage.measure import label, regionprops
 
 from utils.setup import setup_csv_writer
 from utils.analysis import inv, group_avg, binarize, top_ten_average
-from core import BinarizationConfig, OutputConfig, BinarizationResults
+from core import BinarizationConfig, OutputConfig, BinarizationResults, BinarizationQuantityResults
 from utils import vprint
 
 
@@ -23,6 +23,9 @@ class FrameMetrics:
     is_connected: bool
     void_area: float
     regions: List
+    island_area_quantity: float
+    island_area_2nd_quantity: float
+    void_area_quantity: float
 
 
 def check_span(frame):
@@ -79,14 +82,24 @@ def find_largest_void(frame: np.ndarray, bin_config: BinarizationConfig, find_vo
     areas = [region.area for region in largest_regions]
     if num != len(areas):
         areas.append(0)
-
-    if(window_size_set):
-        print(frame.shape[0])
-        areas = [a *(window_size**2)*(frame.shape[0]*2)*(frame.shape[1]*2) for a in areas]
-        print("hi")
     
     return areas  # Returns largest region(s) area
 
+# Added by group 1, allows for quantified values to be calculated
+def convert_to_quantity(frame: np.ndarray, percentages: list, bin_config: BinarizationConfig):
+
+    window_size = bin_config.window_size_var
+
+    # Ensure percentages is always a list
+    if not isinstance(percentages, (list, tuple, np.ndarray)):
+        percentages = [percentages]
+
+    areas = [a*(window_size**2)*(bin_config.binning**2) for a in percentages]
+    print("calculating area based on window size")
+
+    # Note that binning is accounted for to scale up to get the correct original size of the image
+
+    return areas
 
 def largest_island_position(frame: np.ndarray):
 
@@ -123,6 +136,16 @@ def analyze_binarized_frame(frame: np.ndarray, bin_config: BinarizationConfig) -
     is_connected = check_span(frame)
     void_area = find_largest_void(frame, bin_config, find_void=True)[0]
 
+    # Calculate absolute metrics, only if the window size has been set
+    if bin_config.window_size_enabled:
+        island_area_quantity = convert_to_quantity(frame, island_area, bin_config)
+        island_area_2nd_quantity = convert_to_quantity(frame, island_area_2nd, bin_config)
+        void_area_quantity = convert_to_quantity(frame, void_area, bin_config)
+    else:
+        island_area_quantity = -1
+        island_area_2nd_quantity = -1
+        void_area_quantity = -1
+
     # Get region data
     labeled_frame, num_labels = label(frame, connectivity=2, return_num=True)
     regions = regionprops(labeled_frame)
@@ -134,6 +157,9 @@ def analyze_binarized_frame(frame: np.ndarray, bin_config: BinarizationConfig) -
         is_connected=is_connected,
         void_area=void_area,
         regions=regions,
+        island_area_quantity=island_area_quantity,
+        island_area_2nd_quantity=island_area_2nd_quantity,
+        void_area_quantity=void_area_quantity
     )
 
 
@@ -191,12 +217,15 @@ def track_void(
     island_area_lst2 = []
     connected_lst = []
     region_lst = []
+    void_quantity_lst = []
+    island_quantity_lst = []
+    island_quantity_lst2 = []
 
     # Process each frame
     for frame_idx in frame_indices:
         # Binarize and downsample frame
         binarized_frame = binarize(image[frame_idx], threshold)
-        downsampled_frame = group_avg(binarized_frame, 2, bin_mask=True)
+        downsampled_frame = group_avg(binarized_frame, bin_config.binning, bin_mask=True)
 
         # Analyze frame metrics
         metrics = analyze_binarized_frame(downsampled_frame, bin_config)
@@ -219,8 +248,11 @@ def track_void(
         island_area_lst2.append(metrics.island_area_2nd)
         connected_lst.append(metrics.is_connected)
         region_lst.append(metrics.regions)
+        void_quantity_lst.append(metrics.void_area_quantity)
+        island_quantity_lst.append(metrics.island_area_quantity)
+        island_quantity_lst2.append(metrics.island_area_2nd_quantity)
 
-    return void_lst, island_area_lst, island_area_lst2, connected_lst
+    return void_lst, island_area_lst, island_area_lst2, connected_lst, void_quantity_lst, island_quantity_lst, island_quantity_lst2
 
 
 def analyze_binarization(
@@ -256,7 +288,7 @@ def analyze_binarization(
         csvwriter, myfile = setup_csv_writer(filename)
 
     # Process frames using modular track_void function
-    largest_void_lst, island_area_lst, island_area_lst2, connected_lst = track_void(
+    largest_void_lst, island_area_lst, island_area_lst2, connected_lst, void_quantity_lst, island_quantity_lst, island_quantity_lst2 = track_void(
         image, name, bin_config, out_config, csvwriter
     )
 
@@ -281,6 +313,11 @@ def analyze_binarization(
     island_size_initial2 = np.mean(island_area_lst2[0:start_initial_index])
     island_percent_gain_list = np.array(island_area_lst) / island_size_initial
 
+    print("About to access island size initial quantity")
+
+    island_size_initial_quantity = np.mean(island_quantity_lst[0:start_initial_index])
+    island_size_initial2_quantity = np.mean(island_quantity_lst2[0:start_initial_index])
+
     # Create visualization plot using extracted function
     fig = None
     if out_config.save_graphs:
@@ -297,13 +334,15 @@ def analyze_binarization(
         )
 
     # Calculate final metrics
-    downsample = 2
+    downsample = bin_config.binning
     img_dims = image[0].shape[0] * image[0].shape[1] / (downsample**2)
 
     avg_void_percent_change = (
         np.mean(largest_void_lst[0:stop_index]) / void_size_initial
     )
     max_void_size = top_ten_average(largest_void_lst) / img_dims
+
+    max_void_size_quantity = top_ten_average(void_quantity_lst)
 
     avg_island_percent_change = (
         np.mean(island_area_lst[0:stop_index]) / island_size_initial
@@ -312,16 +351,27 @@ def analyze_binarization(
     island_size_initial2_norm = island_size_initial2 / img_dims
     max_island_size = top_ten_average(island_area_lst) / img_dims
 
+    max_island_size_quantity = top_ten_average(island_quantity_lst)
+
     spanning = len([con for con in connected_lst if con == 1]) / len(connected_lst)
 
-    results = BinarizationResults(
+    print(f"The max void size is: {max_void_size_quantity}")
+
+    results1 = BinarizationResults(
         spanning=spanning,
         max_island_size=max_island_size,
         max_void_size=max_void_size,
         avg_island_percent_change=avg_island_percent_change,
         avg_void_percent_change=avg_void_percent_change,
         island_size_initial=island_size_initial_norm,
-        island_size_initial2=island_size_initial2_norm,
+        island_size_initial2=island_size_initial2_norm
     )
 
-    return fig, results
+    results2 = BinarizationQuantityResults(
+        max_island_size_quantity=max_island_size_quantity, # Quantified
+        max_void_size_quantity=max_void_size_quantity, # Quantified
+        island_size_initial_quantity=island_size_initial_quantity, # Quantified
+        island_size_initial2_quantity=island_size_initial2_quantity, # Quantified
+    )
+    
+    return fig, results1, results2

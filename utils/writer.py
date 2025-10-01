@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, TypeAlias, TypeVar
 
 from core import ResultsBase, sort_channel_results_by_metric
 from utils.reader import read_csv_to_channel_results
-from visualization.barcode import gen_combined_barcode
+from visualization.barcode import gen_combined_barcode, gen_extended_barcode
 
 warnings.filterwarnings("ignore")
 
@@ -104,7 +104,8 @@ def generate_aggregate_csv(
 
     # Generate barcode if requested
     if gen_barcode:
-        barcode_path = output_csv.replace(".csv", " Barcode")
+
+        barcode_path = output_csv.replace(".csv", "Barcode")
         gen_combined_barcode(
             all_results, barcode_path, separate_channels=separate_channels
         )

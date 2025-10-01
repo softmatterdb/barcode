@@ -15,6 +15,10 @@ class Metrics(Enum):
     AVG_VOID_AREA_CHANGE = "Average Void Area Change"
     ISLAND_MAX_AREA_INITIAL = "Initial Maximum Island Area"
     ISLAND_MAX_AREA_INITIAL2 = "Initial 2nd Maximum Island Area"
+    ISLAND_MAX_AREA_QUANTITY = "Maximum Island Area Quantity"
+    VOID_MAX_AREA_QUANTITY = "Maximum Void Area Quantity"
+    ISLAND_MAX_AREA_INITIAL_QUANTITY = "Initial Maximum Island Area Quantity"
+    ISLAND_MAX_AREA_INITIAL2_QUANTITY = "Initial 2nd Maximum Island Area Quantity"
 
     # Metrics for optical flow analysis
     MEAN_SPEED = "Mean Speed"
@@ -46,6 +50,7 @@ class Units(Enum):
     ACCELERATION: str = "nm/s"
     DIRECTION: str = "rads"
     PERCENT_FRAMES: str = "% of Frames"
+    AREA: str = "μm^2"
 
 
 def get_data_limits(
@@ -90,7 +95,7 @@ def get_data_limits(
                 limits.append(direction_static_limits)
         elif unit == Units.PERCENT_CHANGE:
             limits.append(dynamic_limits(data[:, i], 1))
-        elif unit in [Units.SPEED, Units.ACCELERATION]:
+        elif unit in [Units.SPEED, Units.ACCELERATION, Units.AREA]:
             limits.append([0, np.nanmax(data[:, i])])
         elif unit == Units.NONE:
             limits.append(dynamic_limits(data[:, i], 0))

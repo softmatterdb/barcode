@@ -11,6 +11,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from gui.config import PreviewConfigGUI, InputConfigGUI, BarcodeConfigGUI
 from utils.preview_binarization import load_first_frame, binarize
 
+from .execution_tab import create_popup
 from core import BinarizationConfig
 
 def create_binarization_frame(
@@ -66,9 +67,19 @@ def create_binarization_frame(
     row_b += 1
 
     # Binarization Threshold with scale
-    tk.Label(frame, text="Binarization Threshold:").grid(
-        row=row_b, column=0, sticky="w", padx=5, pady=5
-    )
+
+    '''Can delete the three lines below once everything is working'''
+    # tk.Label(frame, text="Binarization Threshold:").grid(
+    #     row=row_b, column=0, sticky="w", padx=5, pady=5
+    # )
+
+    binarization_label=tk.Label(frame, text="Binarization Threshold:")
+    binarization_label.grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+
+    # Add popup for binarization threshold
+    create_popup(frame, "Changes cutoff threshold for binarization. Decreasing threshold can increase noise, while increasing threshold can lead to lost" \
+    "features. Use viewer to determine optimal value for sample.", row_b, binarization_label)
+
 
     scale_frame = tk.Frame(frame)
     scale_frame.columnconfigure(0, weight=0)
@@ -282,18 +293,27 @@ def create_binarization_frame(
     load_preview_frame()
 
     # Other binarization settings
-    tk.Label(frame, text="Frame Step (res_f_step) [min=1]:").grid(
-        row=row_b, column=0, sticky="w", padx=5, pady=5
-    )
+    '''Can delete the three lines below once everything is working'''
+    # tk.Label(frame, text="Frame Step (res_f_step) [min=1]:").grid(
+    #     row=row_b, column=0, sticky="w", padx=5, pady=5
+    # )
+    frame_step_label=tk.Label(frame, text="Frame Step (res_f_step_ [min=1]):")
+    frame_step_label.grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+
     res_f_step_spin = ttk.Spinbox(
         frame, from_=1, to=100, increment=1, textvariable=cb.frame_step, width=7
     )
     res_f_step_spin.grid(row=row_b, column=1, padx=5, pady=5)
+
+    # Add popup for frame step
+    create_popup(frame, "Changes interval (in frames) between binarized frames. Affects speed of program, with larger intervals decreasing program" \
+    "runtime.", row_b, frame_step_label)
+
     row_b += 1
 
-    tk.Label(frame, text="Frame Start Percent (pf_start 0.5–0.9):").grid(
-        row=row_b, column=0, sticky="w", padx=5, pady=5
-    )
+    pf_start_label = tk.Label(frame, text="Frame Start Percent (pf_start 0.5-0.9):")
+    pf_start_label.grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+
     pf_start_spin = ttk.Spinbox(
         frame,
         from_=0.5,
@@ -304,11 +324,17 @@ def create_binarization_frame(
         width=7,
     )
     pf_start_spin.grid(row=row_b, column=1, padx=5, pady=5)
+
+    create_popup(frame, "Change window over which binarization metrics are calculated. By default, BARCODE compares metrics from the first 5 percent of the" \
+    "video to the last 10 percent of the video, calculating percentage change. Changing Frame Start Percent and Frame Stop Percent allows shifting and scaling" \
+    "of the second portion to narrow in on smaller periods or investigate behavior at earlier periods. Frame Start determines beginning of second portion.", 
+    row_b, pf_start_label)
+
     row_b += 1
 
-    tk.Label(frame, text="Frame Stop Percent (pf_stop 0.9–1.0):").grid(
-        row=row_b, column=0, sticky="w", padx=5, pady=5
-    )
+    pf_stop_label=tk.Label(frame, text="Frame Stop Percent (pf_stop 0.9-1.0):")
+    pf_stop_label.grid(row=row_b, column=0, sticky="w", padx=5, pady=5)
+
     pf_stop_spin = ttk.Spinbox(
         frame,
         from_=0.9,
@@ -319,5 +345,11 @@ def create_binarization_frame(
         width=7,
     )
     pf_stop_spin.grid(row=row_b, column=1, padx=5, pady=5)
+
+    #Add popup for frame stop percent
+    create_popup(frame, "Change window over which binarization metrics are calculated. By default, BARCODE compares metrics for the first 5 percent of the" \
+    "video to the last 10 percent of the video, calculating percent change. Changing Frame Start Percent and Frame Stop Percent allows shifting and scaling" \
+    "of the second portion to narrow in on smaller periods or investigate behavior at earlier periods. Frame Stop determines end of second portion.", row_b, 
+    pf_stop_label)
 
     return frame

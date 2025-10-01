@@ -23,6 +23,7 @@ from core.config import (
 from core.results import (
     ResultsBase,
     BinarizationResults,
+    BinarizationQuantityResults,
     FlowResults,
     IntensityResults,
     ChannelResults,
@@ -47,6 +48,7 @@ __all__ = [
     "AggregationConfig",
     "ResultsBase",
     "BinarizationResults",
+    "BinarizationQuantityResults",
     "FlowResults",
     "IntensityResults",
     "ChannelResults",

@@ -2,7 +2,7 @@ import threading
 import traceback
 
 import matplotlib
-import tkinter as ttk
+import tkinter as tk
 
 # import GUI pages directly
 from gui.pages.home_page import create_home_page
