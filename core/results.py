@@ -38,7 +38,6 @@ class ResultsBase(ABC):
         """Convert results to a NumPy array for easier manipulation."""
         return np.array(self.get_data(**kwargs), dtype=float)
 
-
 @dataclass
 class BinarizationResults(ResultsBase):
     """Results from binarization analysis."""
@@ -50,6 +49,12 @@ class BinarizationResults(ResultsBase):
     avg_void_percent_change: float = np.nan
     island_size_initial: float = np.nan
     island_size_initial2: float = np.nan
+
+    # Quantified versions of the above
+    max_island_size_quantity: float = np.nan
+    max_void_size_quantity: float = np.nan
+    island_size_initial_quantity: float = np.nan
+    island_size_initial2_quantity: float = np.nan
 
     @classmethod
     def get_metrics(cls) -> List[Metrics]:
@@ -64,6 +69,18 @@ class BinarizationResults(ResultsBase):
         ]
 
     @classmethod
+    def get_quantified_metrics(cls) -> List[Metrics]:
+        return [
+            Metrics.SPANNING,
+            Metrics.ISLAND_MAX_AREA_QUANTITY,
+            Metrics.VOID_MAX_AREA_QUANTITY,
+            Metrics.AVG_ISLAND_AREA_CHANGE,
+            Metrics.AVG_VOID_AREA_CHANGE,
+            Metrics.ISLAND_MAX_AREA_INITIAL_QUANTITY,
+            Metrics.ISLAND_MAX_AREA_INITIAL2_QUANTITY,
+        ]
+
+    @classmethod
     def get_units(cls) -> List[Units]:
         return [
             Units.PERCENT_FRAMES,
@@ -73,6 +90,18 @@ class BinarizationResults(ResultsBase):
             Units.PERCENT_CHANGE,
             Units.PERCENT_FOV,
             Units.PERCENT_FOV,
+        ] 
+    
+    @classmethod
+    def get_quantified_units(cls) -> List[Units]:
+        return [
+            Units.PERCENT_FRAMES,
+            Units.AREA,
+            Units.AREA,
+            Units.PERCENT_CHANGE,
+            Units.PERCENT_CHANGE,
+            Units.AREA,
+            Units.AREA,
         ] 
     
     def get_data(self) -> List[float]:
@@ -86,41 +115,16 @@ class BinarizationResults(ResultsBase):
             self.island_size_initial2,
         ]
     
-@dataclass
-class BinarizationQuantityResults(ResultsBase):
-    """Results from binarization analysis which includes absolute quantities"""
-
-    max_island_size_quantity: float = np.nan
-    max_void_size_quantity: float = np.nan
-    island_size_initial_quantity: float = np.nan
-    island_size_initial2_quantity: float = np.nan
-
-    @classmethod
-    def get_metrics(cls) -> List[Metrics]:
+    def get_quantified_data(self) -> List[float]:
         return [
-            Metrics.ISLAND_MAX_AREA_QUANTITY,
-            Metrics.VOID_MAX_AREA_QUANTITY,
-            Metrics.ISLAND_MAX_AREA_INITIAL_QUANTITY,
-            Metrics.ISLAND_MAX_AREA_INITIAL2_QUANTITY
-        ]
-
-    @classmethod
-    def get_units(cls) -> List[Units]:
-        return [
-            Units.AREA,
-            Units.AREA,
-            Units.AREA,
-            Units.AREA
-        ] 
-    
-    def get_data(self) -> List[float]:
-        return [
+            self.spanning,
             self.max_island_size_quantity,
             self.max_void_size_quantity,
+            self.avg_island_percent_change,
+            self.avg_void_percent_change,
             self.island_size_initial_quantity,
-            self.island_size_initial2_quantity
+            self.island_size_initial2_quantity,
         ]
-
 
 
 @dataclass
@@ -213,7 +217,6 @@ class ChannelResults(ResultsBase):
     dim_channel_flag: int = 0  # 0=normal, 1=dim channel
 
     binarization: BinarizationResults = field(default_factory=BinarizationResults)
-    binarization_quantity: BinarizationQuantityResults = field(default_factory=BinarizationQuantityResults)
     intensity: IntensityResults = field(default_factory=IntensityResults)
     flow: FlowResults = field(default_factory=FlowResults)
 
@@ -242,8 +245,7 @@ class ChannelResults(ResultsBase):
                 if not just_metrics
                 else []
             )
-            + BinarizationResults.get_metrics()
-            + BinarizationQuantityResults.get_metrics()
+            + BinarizationResults.get_quantified_metrics()
             + IntensityResults.get_metrics()
             + FlowResults.get_metrics()
         )
@@ -265,8 +267,7 @@ class ChannelResults(ResultsBase):
     def get_extended_units(cls, just_metrics: bool = False) -> List[Units]:
         return (
             ([Units.NONE, Units.NONE, Units.NONE] if not just_metrics else [])
-            + BinarizationResults.get_units()
-            + BinarizationQuantityResults.get_units()
+            + BinarizationResults.get_quantified_units()
             + IntensityResults.get_units()
             + FlowResults.get_units()
         )
@@ -284,8 +285,7 @@ class ChannelResults(ResultsBase):
         data = []
         if not just_metrics:
             data = [self.filepath, self.channel, self.dim_channel_flag]
-        data.extend(self.binarization.get_data())
-        data.extend(self.binarization_quantity.get_data())
+        data.extend(self.binarization.get_quantified_data())
         data.extend(self.intensity.get_data())
         data.extend(self.flow.get_data())
         return data

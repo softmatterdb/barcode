@@ -1,6 +1,9 @@
 import csv
 import os
 import warnings
+
+import numpy as np
+
 from typing import Dict, List, Optional, TypeAlias, TypeVar
 
 from core import ResultsBase, sort_channel_results_by_metric
@@ -18,6 +21,7 @@ ExtraColumns: TypeAlias = Dict[str, List[str]]
 def results_to_csv(
     results: List[R],
     output_filepath: str,
+    extend: bool,
     extra_columns: Optional[ExtraColumns] = None,
     **kwargs,
 ) -> None:
@@ -37,26 +41,62 @@ def results_to_csv(
             type(result) == expected_type
         ), f"All results must be the same type. Result {i} is {type(result).__name__}, expected {expected_type.__name__}"
 
+    # All results must have the same headers
+    if np.isnan(results[0].binarization.get_data()[2]):
+        quantified = True
+    else:
+        quantified = False
+
+    if quantified:
+        for i, result in enumerate(results[1:], 1):
+            assert (
+                np.isnan(result.binarization.get_data()[2]) == True
+            ), f"All results must have the same extended headers. Result {i} headers do not match."
+    else:
+        for i, result in enumerate(results[1:], 1):
+            assert (
+                np.isnan(result.binarization.get_data()[2]) == False
+            ), f"All results must have the same headers. Result {i} headers do not match."
+
     # Ensure the directory exists
     assert os.path.exists(
         os.path.dirname(output_filepath)
     ), "Output directory does not exist."
 
-    headers = results[0].get_headers(**kwargs)
-    if extra_columns:
-        headers = list(extra_columns.keys()) + headers
+    if quantified:
+        headers = results[0].get_extended_headers(**kwargs)
+        if extra_columns:
+            headers = list(extra_columns.keys()) + headers
 
-    with open(output_filepath, "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(headers)
+        with open(output_filepath, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(headers)
 
-        for i, result in enumerate(results):
-            row = []
-            if extra_columns:
-                for col_name in extra_columns.keys():
-                    row.append(extra_columns[col_name][i])
-            row.extend(result.get_data(**kwargs))
-            writer.writerow(row)
+            for i, result in enumerate(results):
+                row = []
+                if extra_columns:
+                    for col_name in extra_columns.keys():
+                        row.append(extra_columns[col_name][i])
+                row.extend(result.get_extended_data(**kwargs))
+                writer.writerow(row)
+    else:
+        headers = results[0].get_headers(**kwargs)
+        if extra_columns:
+            headers = list(extra_columns.keys()) + headers
+
+        with open(output_filepath, "w", newline="", encoding="utf-8") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(headers)
+
+            for i, result in enumerate(results):
+                row = []
+                if extra_columns:
+                    for col_name in extra_columns.keys():
+                        row.append(extra_columns[col_name][i])
+                row.extend(result.get_data(**kwargs))
+                writer.writerow(row)
+
+    return quantified
 
 
 def generate_aggregate_csv(
@@ -100,12 +140,20 @@ def generate_aggregate_csv(
         sort_channel_results_by_metric(all_results, sort_metric)
 
     # Write aggregate CSV using the clean writer
-    results_to_csv(all_results, output_csv, just_metrics=False)
+    quantified = results_to_csv(all_results, output_csv, False, just_metrics=False)
+    print(quantified)
+    print("the code is here")
 
     # Generate barcode if requested
     if gen_barcode:
 
         barcode_path = output_csv.replace(".csv", "Barcode")
-        gen_combined_barcode(
-            all_results, barcode_path, separate_channels=separate_channels
-        )
+
+        if quantified:
+            gen_extended_barcode(
+                all_results, barcode_path, separate_channels=separate_channels
+            )
+        else:
+            gen_combined_barcode(
+                all_results, barcode_path, separate_channels=separate_channels
+            )

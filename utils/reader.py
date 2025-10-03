@@ -99,7 +99,7 @@ def read_file(
         return file
 
 
-def read_csv_to_channel_results(filepath: str) -> List[ChannelResults]:
+def read_csv_to_channel_results(filepath: str) -> list[ChannelResults]:
     """Read results from a CSV file into a list of ChannelResults."""
 
     def get_value(value_str: str) -> float:
@@ -113,6 +113,7 @@ def read_csv_to_channel_results(filepath: str) -> List[ChannelResults]:
             return np.nan
 
     expected_headers = ChannelResults.get_headers(just_metrics=False)
+    expected_extended_headers = ChannelResults.get_extended_headers(just_metrics=False)
 
     import csv
 
@@ -122,46 +123,80 @@ def read_csv_to_channel_results(filepath: str) -> List[ChannelResults]:
         headers = next(reader)
 
         assert (
-            headers == expected_headers
-        ), f"CSV headers {headers} do not match expected {expected_headers}"
+            (headers == expected_headers) or (headers == expected_extended_headers)
+        ), f"CSV headers {headers} do not match expected {expected_headers} or {expected_extended_headers}"
 
         for row in reader:
-
-            data = [get_value(value) for value in row]
+            filename = row[0]
+            data = [get_value(value) for value in row[1:]]
 
             if np.isnan(data[0]) or np.isnan(data[1]):
                 raise ValueError(f"Invalid channel or dim_channel_flag in row: {row}")
 
-            results.append(
-                ChannelResults(
-                    channel=int(data[0]),
-                    dim_channel_flag=int(data[1]),
-                    binarization=BinarizationResults(
-                        spanning=data[2],
-                        max_island_size=data[3],
-                        max_void_size=data[4],
-                        avg_island_percent_change=data[5],
-                        avg_void_percent_change=data[6],
-                        island_size_initial=data[7],
-                        island_size_initial2=data[8],
-                    ),
-                    intensity=IntensityResults(
-                        max_kurtosis=data[9],
-                        max_median_skew=data[10],
-                        max_mode_skew=data[11],
-                        kurtosis_diff=data[12],
-                        median_skew_diff=data[13],
-                        mode_skew_diff=data[14],
-                    ),
-                    flow=FlowResults(
-                        mean_speed=data[15],
-                        delta_speed=data[16],
-                        mean_theta=data[17],
-                        mean_sigma_theta=data[18],
-                    ),
+            if(headers == expected_headers):
+                results.append(
+                    ChannelResults(
+                        filepath=filename,
+                        channel=int(data[0]),
+                        dim_channel_flag=int(data[1]),
+                        binarization=BinarizationResults(
+                            spanning=data[2],
+                            max_island_size=data[3],
+                            max_void_size=data[4],
+                            avg_island_percent_change=data[5],
+                            avg_void_percent_change=data[6],
+                            island_size_initial=data[7],
+                            island_size_initial2=data[8],
+                        ),
+                        intensity=IntensityResults(
+                            max_kurtosis=data[9],
+                            max_median_skew=data[10],
+                            max_mode_skew=data[11],
+                            kurtosis_diff=data[12],
+                            median_skew_diff=data[13],
+                            mode_skew_diff=data[14],
+                        ),
+                        flow=FlowResults(
+                            mean_speed=data[15],
+                            delta_speed=data[16],
+                            mean_theta=data[17],
+                            mean_sigma_theta=data[18],
+                        ),
+                    )
                 )
-            )
+            else:
+                results.append(
+                    ChannelResults(
+                        filepath=filename,
+                        channel=int(data[0]),
+                        dim_channel_flag=int(data[1]),
+                        binarization=BinarizationResults(
+                            spanning=data[2],
+                            max_island_size_quantity=data[3],
+                            max_void_size_quantity=data[4],
+                            avg_island_percent_change=data[5],
+                            avg_void_percent_change=data[6],
+                            island_size_initial_quantity=data[7],
+                            island_size_initial2_quantity=data[8],
+                        ),
+                        intensity=IntensityResults(
+                            max_kurtosis=data[9],
+                            max_median_skew=data[10],
+                            max_mode_skew=data[11],
+                            kurtosis_diff=data[12],
+                            median_skew_diff=data[13],
+                            mode_skew_diff=data[14],
+                        ),
+                        flow=FlowResults(
+                            mean_speed=data[15],
+                            delta_speed=data[16],
+                            mean_theta=data[17],
+                            mean_sigma_theta=data[18],
+                        ),
+                    )
+                )
 
+    print("Finished reading CSV")
     return results
 
 

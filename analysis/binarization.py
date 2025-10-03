@@ -9,7 +9,7 @@ from skimage.measure import label, regionprops
 
 from utils.setup import setup_csv_writer
 from utils.analysis import inv, group_avg, binarize, top_ten_average
-from core import BinarizationConfig, OutputConfig, BinarizationResults, BinarizationQuantityResults
+from core import BinarizationConfig, OutputConfig, BinarizationResults
 from utils import vprint
 
 
@@ -142,9 +142,9 @@ def analyze_binarized_frame(frame: np.ndarray, bin_config: BinarizationConfig) -
         island_area_2nd_quantity = convert_to_quantity(frame, island_area_2nd, bin_config)
         void_area_quantity = convert_to_quantity(frame, void_area, bin_config)
     else:
-        island_area_quantity = -1
-        island_area_2nd_quantity = -1
-        void_area_quantity = -1
+        island_area_quantity = np.nan
+        island_area_2nd_quantity = np.nan
+        void_area_quantity = np.nan
 
     # Get region data
     labeled_frame, num_labels = label(frame, connectivity=2, return_num=True)
@@ -313,11 +313,11 @@ def analyze_binarization(
     island_size_initial2 = np.mean(island_area_lst2[0:start_initial_index])
     island_percent_gain_list = np.array(island_area_lst) / island_size_initial
 
-    print("About to access island size initial quantity")
+    print("Island Size Initial: " + str(island_size_initial))
 
     island_size_initial_quantity = np.mean(island_quantity_lst[0:start_initial_index])
     island_size_initial2_quantity = np.mean(island_quantity_lst2[0:start_initial_index])
-
+       
     # Create visualization plot using extracted function
     fig = None
     if out_config.save_graphs:
@@ -351,27 +351,28 @@ def analyze_binarization(
     island_size_initial2_norm = island_size_initial2 / img_dims
     max_island_size = top_ten_average(island_area_lst) / img_dims
 
+    print("Max island size is: ")
+    print(max_island_size)
+
     max_island_size_quantity = top_ten_average(island_quantity_lst)
 
     spanning = len([con for con in connected_lst if con == 1]) / len(connected_lst)
 
-    print(f"The max void size is: {max_void_size_quantity}")
+    print("Max void size is: ")
+    print(max_void_size)
 
-    results1 = BinarizationResults(
+    results = BinarizationResults(
         spanning=spanning,
         max_island_size=max_island_size,
         max_void_size=max_void_size,
         avg_island_percent_change=avg_island_percent_change,
         avg_void_percent_change=avg_void_percent_change,
         island_size_initial=island_size_initial_norm,
-        island_size_initial2=island_size_initial2_norm
-    )
-
-    results2 = BinarizationQuantityResults(
+        island_size_initial2=island_size_initial2_norm,
         max_island_size_quantity=max_island_size_quantity, # Quantified
         max_void_size_quantity=max_void_size_quantity, # Quantified
         island_size_initial_quantity=island_size_initial_quantity, # Quantified
         island_size_initial2_quantity=island_size_initial2_quantity, # Quantified
     )
     
-    return fig, results1, results2
+    return fig, results

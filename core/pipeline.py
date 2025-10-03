@@ -5,7 +5,7 @@ from typing import List, Tuple
 import numpy as np
 
 from analysis import run_analysis_pipeline
-from core import BarcodeConfig, ChannelResults
+from core import BarcodeConfig, ChannelResults, BinarizationConfig
 from utils import vprint, set_verbose, Timer
 from utils.analysis import check_channel_dim
 from utils.reader import read_file, extract_nd2_metadata
@@ -63,11 +63,11 @@ def save_analysis_results(
     if all_results:
         if is_single_file:
             # Single file: fail fast if can't write
-            results_to_csv(all_results, csv_path, just_metrics=False)
+            results_to_csv(all_results, csv_path, config.binarization.window_size_enabled, just_metrics=False)
         else:
             # Directory: try alternate names if file exists
             try:
-                results_to_csv(all_results, csv_path, just_metrics=False)
+                results_to_csv(all_results, csv_path, config.binarization.window_size_enabled, just_metrics=False)
             except:
                 counter = 1
                 while True:
@@ -77,7 +77,7 @@ def save_analysis_results(
                     if not os.path.exists(csv_path):
                         break
                     counter += 1
-                results_to_csv(all_results, csv_path, just_metrics=False)
+                results_to_csv(all_results, csv_path, config.binarization.window_size_enabled, just_metrics=False)
     else:
         print("Warning: No results to write - all files may have failed processing")
 
@@ -85,13 +85,21 @@ def save_analysis_results(
     if config.output.generate_dataset_barcode and all_results:
         try:
             # Multiple files: use all channels
-
             if not is_single_file and config.channels.parse_all_channels:
-                gen_combined_barcode(all_results, barcode_path, separate_channels=False)
-                gen_extended_barcode(all_results, barcode_extended_path, separate_channels=False)
+                if config.binarization.window_size_enabled: 
+                    gen_combined_barcode(all_results, barcode_path, separate_channels=False)
+                    gen_extended_barcode(all_results, barcode_extended_path, separate_channels=False)
+                else:
+                    gen_combined_barcode(all_results, barcode_path, separate_channels=False)
             else:
-                gen_combined_barcode(all_results, barcode_path)
-                gen_extended_barcode(all_results, barcode_extended_path)
+                if config.binarization.window_size_enabled: 
+                    print("Generating two barcodes")
+                    gen_combined_barcode(all_results, barcode_path)
+                    gen_extended_barcode(all_results, barcode_extended_path)
+                else:
+                    print("Generating one barcode")
+                    print(BinarizationConfig.window_size_enabled)
+                    gen_combined_barcode(all_results, barcode_path)
 
         except Exception as e:
             with open(ff_loc, "a", encoding="utf-8") as log_file:

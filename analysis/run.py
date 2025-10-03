@@ -22,11 +22,10 @@ def run_analysis_pipeline(
     # Run binarization analysis
     if config.analysis.enable_binarization:
         try:
-            bfig, binarization_results, binarization_quantity_results = analyze_binarization(
+            bfig, binarization_results = analyze_binarization(
                 file, output_dir, channel, config.binarization, config.output
             )
             results.binarization = binarization_results
-            results.binarization_quantity = binarization_quantity_results
             if bfig and config.output.save_graphs:
                 figures.append(bfig)
         except Exception as e:
