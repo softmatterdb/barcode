@@ -51,7 +51,7 @@ The binarization module takes frames from the original video and binarizes those
 
 | Setting Name | Description | Limits | Default Value |
 | - | - | - | - |
-| Binarization Threshold | Controls the threshold percentage of the mean which binarizes the image; offset parameter determines the binarization threshold for a given frame as $(1 + \text{offset}) * \overline{B(i)}$, where $\overline{B(i)}$ represents the mean pixel intensity for frame $i$ | (-1, 1) | 0.1 |
+| Binarization Threshold | Controls the threshold percentage of the mean which binarizes the image; offset parameter determines the binarization threshold for a given frame as $(1 + \text{offset}) * \overline{B(i)}$, where $\overline{B(i)}$ represents the mean pixel intensity for frame $i$. Users are cautioned that changes to the offset value can affect the outputs of the Image Binarization branch. | (-1, 1) | 0.1 | 
 | Frame Step | Controls the interval between binarized frames; affects speed of program, with larger intervals decreasing program runtime at potential loss of accuracy | (1, 100) | 10 |
 | Fraction of Frames Evaluated | Used for determining frames for averaging in calculation of initial maximum island area and maximum island/void area change; not used for calculation of maximum island/void area; decreasing this results in fewer frames being used for these averages, at the cost of more sensitivity to noise | (0.01, 0.25) | 0.05 |
 
@@ -129,3 +129,4 @@ The BARCODE program saves multiple outputs during the course of the analysis.
 - **Reduced Data Structures:** The program will also output the reduced data structures used to perform the analysis. This would be the binarized frames of the video for the binarization module, the flow fields for the optical flow module, and the intensity distributions for the intensity distribution module. All three of these are saved in CSV file format, and are comparatively small, with the largest files being at most 1-10 MB.
 
 The visualizations and reduced data structures are saved in a folder titled ```{name of file} BARCODE Output```, saved in the same folder as the file, within a subfolder for each channel evaluated. The summary and barcode are saved in the root folder where the program is running.
+
