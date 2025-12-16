@@ -37,12 +37,14 @@ def read_file(filepath, count_list, accept_dim = False, allow_large_files = True
             if "Z" in ndfile.sizes:
                 count_list[0] += 1
                 raise TypeError('Z-stack identified, skipping to next file...')
-            if 'T' not in ndfile.sizes or len(ndfile.shape) <= 2 or ndfile.sizes['T'] <= 5:
+            if "T" not in ndfile.sizes or len(ndfile.shape) <= 2 or ndfile.sizes["T"] <= 5:
                 count_list[0] += 1
                 raise TypeError('Too few frames, unable to capture dynamics, skipping to next file...')
             if ndfile == None:
                 raise TypeError('Unable to read file, skipping to next file...')
             file = ndfile.asarray()
+            if "C" not in ndfile.sizes:
+                file = np.expand_dims(file, axis = 1)
             file = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
     
     if (file == 0).all():
