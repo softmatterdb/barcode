@@ -205,7 +205,7 @@ def main ():
         'Void Area Change', 'Island Area Change', 'Initial Island Area 1',
         'Initial Island Area 2', 'Maximum Kurtosis', 'Maximum Median Skewness',
         'Maximum Mode Skewness', 'Kurtosis Difference', 'Median Skewness Difference',
-        'Mode Skewness Difference', 'Mean Speed', 'Speed Change',
+        'Mode Skewness Difference', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread'
     ]
 
