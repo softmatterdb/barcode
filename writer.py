@@ -30,7 +30,7 @@ def generate_aggregate_csv(csv_list, csv_loc, gen_barcode, sort = None, separate
         'Mode Skewness Change', 'Speed', 'Speed Change',
         'Mean Flow Direction', 'Flow Directional Spread']
     if gen_barcode:
-        combined_barcode_loc = os.path.join(os.path.dirname(csv_loc), f'{os.path.basename(csv_loc).removesuffix('.csv')} Barcode')
+        combined_barcode_loc = os.path.join(os.path.dirname(csv_loc), f"{os.path.basename(csv_loc).removesuffix('.csv')} Barcode")
         
     num_params = len(headers) - 1
     csv_data = np.zeros(shape=(num_params))

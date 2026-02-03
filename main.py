@@ -25,8 +25,8 @@ def set_config_data(args = None):
             'accept_dim_images':args.dim_images,
             'binarization':args.check_binarization,
             'channel_select':'All' if args.channels else int(args.channel_selection),
-            'optical_flow':args.check_optical_flow,
             'intensity_distribution':args.check_intensity_distribution,
+            'optical_flow':args.check_optical_flow,
             'verbose':args.verbose
         }
         
@@ -36,29 +36,25 @@ def set_config_data(args = None):
             'save_visualizations':args.save_visualizations,
         }
         
-        if reader_data['binarization']:
-            binarization_data = {
-                'frame_step':int(args.ib_f_step),
-                'percentage_frames_evaluated':float(args.ib_pf_evaluation),
-                'threshold_offset':float(args.thresh_offset),
-            }
-        if reader_data['optical_flow']:
-            flow_data = {
-                'downsample':int(args.downsample),
-                'exposure_time':float(args.exposure_time),
-                'frame_step':int(args.of_f_step),
-                'percentage_frames_evaluated':float(args.of_pf_evaluation),
-                'um_pixel_ratio':float(args.um_pixel_ratio),
-                'win_size':int(args.win_size),
-            }
-
-        if reader_data['intensity_distribution']:
-            intensity_distribution_data = {
-                'bin_size':int(args.hist_bin_size),
-                'frame_step':int(args.id_f_step),
-                'noise_threshold':float(args.noise_threshold),
-                'percentage_frames_evaluated':float(args.id_pf_evaluation),
-            }
+        binarization_data = {
+            'frame_step':int(args.ib_f_step),
+            'percentage_frames_evaluated':float(args.ib_pf_evaluation),
+            'threshold_offset':float(args.thresh_offset),
+        }
+        flow_data = {
+            'downsample':int(args.downsample),
+            'exposure_time':float(args.exposure_time),
+            'frame_step':int(args.of_f_step),
+            'percentage_frames_evaluated':float(args.of_pf_evaluation),
+            'um_pixel_ratio':float(args.um_pixel_ratio),
+            'win_size':int(args.win_size),
+        }
+        intensity_distribution_data = {
+            'bin_size':int(args.hist_bin_size),
+            'frame_step':int(args.id_f_step),
+            'noise_threshold':float(args.noise_threshold),
+            'percentage_frames_evaluated':float(args.id_pf_evaluation),
+        }
 
         config_data = {
             'image_binarization_parameters':binarization_data,
