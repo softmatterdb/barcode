@@ -2,9 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import csv, os, functools, builtins
 from utils import average_largest, find_analysis_frames
-from utils.intensity_distribution import mean, frame_mode, median_skewness, mode_skewness, kurtosis, calc_frame_metric, histogram
+from utils.analysis.intensity_distribution import (
+    mean, frame_mode, median_skewness, mode_skewness, kurtosis, 
+    calc_frame_metric, histogram)
 
-def analyze_intensity_dist(file, name, channel, frame_eval_percent, step_size, bin_number, noise_threshold, save_visualization, save_rds, verbose):
+def analyze_intensity_dist(file: np.ndarray, name: str, channel: int, intensity_distribution_settings: dict, output_settings: dict, verbose: bool):
+    step_size = intensity_distribution_settings["frame_step"]
+    bin_number = intensity_distribution_settings["bin_size"]
+    noise_threshold = intensity_distribution_settings["noise_threshold"]
+    frame_eval_percent = intensity_distribution_settings["percentage_frames_evaluated"]
+    save_visualization = output_settings["save_visualizations"]
+    save_rds = output_settings["save_rds"]
+
     flag = 0 # No flags have been tripped by the module
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None

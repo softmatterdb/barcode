@@ -26,7 +26,7 @@ def read_file(filepath, count_list, accept_dim = False, allow_large_files = True
     
     if filepath.endswith(('.tif', '.tiff')):
         file = iio.imread(filepath)
-        file = np.reshape(file, (file.shape + (1,))) if len(file.shape) == 3 else file
+        file = np.expand_dims(file, axis = 3) if len(file.shape) == 3 else file
         if file.shape[3] != min(file.shape):
             file = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
     elif filepath.endswith('.nd2'):
@@ -61,5 +61,5 @@ def read_file(filepath, count_list, accept_dim = False, allow_large_files = True
         return file    
 
 def load_binarization_frame(file_path, channel = 0):
-    frame = read_file(file_path, count_list = (1, 1), frames = [0])
+    frame = read_file(file_path, count_list = (1, 1), accept_dim=True)
     return frame[0,:,:,channel]

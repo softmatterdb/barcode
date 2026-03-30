@@ -4,15 +4,10 @@ import matplotlib.ticker as ticker
 import csv, os, functools, builtins
 from skimage.measure import label, regionprops
 from scipy import ndimage
-from utils import inv, groupAvg, average_largest, find_analysis_frames
+from utils import groupAvg, average_largest, find_analysis_frames
+from utils.analysis.image_binarization import binarize, inv
 import matplotlib
 matplotlib.use('Agg')
-
-def binarize(frame: np.ndarray, offset_threshold: float):
-    avg_intensity = np.mean(frame)
-    threshold = avg_intensity * (1 + offset_threshold)
-    new_frame = np.where(frame < threshold, 0, 1)
-    return new_frame
 
 def check_span(frame: np.ndarray):
     def check_connected(frame: np.ndarray, axis: int = 0):
@@ -99,7 +94,14 @@ def track_void(image, name, threshold, frame_indices, binning_number, save_visua
 
     return void_lst, island_area_lst, island_area_lst2, connected_lst
 
-def analyze_binarization(file, name, channel, threshold_offset = 0.1, frame_step = 10, frame_eval_percent = 0.05, binning_factor = 2, save_visualization = False, save_rds = False, verbose = True):
+def analyze_binarization(file: np.ndarray, name: str, channel: int, binarization_settings: dict, output_settings: dict, verbose: bool):
+    threshold_offset = binarization_settings["threshold_offset"]
+    frame_step = binarization_settings["frame_step"]
+    frame_eval_percent = binarization_settings["percentage_frames_evaluated"]
+    binning_factor = 2
+    save_visualization = output_settings["save_visualizations"]
+    save_rds = output_settings["save_rds"]
+
     print = functools.partial(builtins.print, flush=True)
     vprint = print if verbose else lambda *a, **k: None
     vprint('Beginning Binarization Analysis')
