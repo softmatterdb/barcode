@@ -28,8 +28,8 @@ Currently, BARCODE only takes in TIFF and ND2 file formats. If files you wish to
 Click on the app file to open the program. From there, a window will appear with the user interface. The user inputs are described below. When finished specifying the operational settings, click "Run" to begin the BARCODE program. A more detailed tutorial for running BARCODE, including test data, is included [here](https://www.livingbam.org/barcode-tutorial). It should take 10-15 seconds on a standard desktop computer to analyze the test data using the software.
 
 ### Execution Settings
-| Setting Name                      | Description                                                                                                                                                                                                                                           |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Setting Name | Description |
+| - | - |
 | Process File | Select a file or folder to run the BARCODE program on|
 | Process Directory | Select a folder to run the BARCODE program on (can not be combined with the "Process File" option above) |
 | Combine CSV Files / Generate Barcodes | Use the generator module to combine BARCODE CSV summaries and generate barcode visualizations without rerunning the program (can not be combined with the "Process File" or "Process Directory" option above) |

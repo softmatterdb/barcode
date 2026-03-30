@@ -1,4 +1,5 @@
 import numpy as np
+
 # Global verbose setting
 _VERBOSE = False
 
@@ -14,13 +15,6 @@ def vprint(*args, **kwargs):
 
 class MyException(Exception):
     pass
-
-def normalize_counts(count): 
-    return count / count.sum()
-
-def inv(arr):
-    ones_arr = np.ones(shape = arr.shape)
-    return ones_arr - arr
 
 def groupAvg(arr, N, bin_mask=False):
     result = np.cumsum(arr, 0)[N-1::N]/float(N)
