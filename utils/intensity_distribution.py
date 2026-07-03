@@ -1,5 +1,5 @@
 import numpy as np
-from utils import normalize_counts, flatten
+from utils import flatten
 
 def mean(values: np.ndarray, probabilities: np.ndarray):
     return np.sum(values * probabilities)
@@ -56,6 +56,9 @@ def calc_frame_metrics(metrics: list, data, bin_number, noise_threshold):
 def frame_mode(frame: np.ndarray, bin_number: int, noise_threshold: float):
     counts, values = histogram(frame, bin_number, noise_threshold)
     return mode(values, counts)
+
+def normalize_counts(count): 
+    return count / count.sum()
 
 def histogram(frame: np.ndarray, bin_number: int, noise_threshold: float) -> tuple[np.ndarray, np.ndarray]:
     if bin_number == 1:

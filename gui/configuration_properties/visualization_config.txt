@@ -1,0 +1,192 @@
+
+    def append(self, major_arr, minor_arr):
+        if not isinstance(major_arr, np.ndarray):
+            major_arr = np.expand_dims(minor_arr, axis = 0)
+        else:
+            minor_arr = np.expand_dims(minor_arr, axis = 0)
+            major_arr = np.append(major_arr, minor_arr, axis=0)
+        return major_arr
+        
+    def read_of_rds(self, path: str) -> tuple[np.ndarray, list]:
+        '''
+        Reads flow fields from a BARCODE-generated CSV file into two arrays with dimension (num_frames, width, height)
+        and one array with the index of the flow fields
+        '''
+        flow_field_x = None
+        flow_field_y = None
+        flow_field_indices = []
+        with open(path, 'r') as file:
+            csvreader = csv.reader(file)
+            x_flag = True
+            x_field = None
+            y_field = None
+            for row in csvreader:
+                if len(row) == 0:
+                    continue
+                elif len(row) == 1:
+                    if str(row[0]).startswith('X'):
+                        x_flag = True
+                    if str(row[0]).startswith('Y'):
+                        x_flag = False
+                    if str(row[0]).startswith('Flow Field'):
+                        flow_idx = int(str(row[0]).split('-')[0].split(' ')[2][1:])
+                        flow_idx2 = int(str(row[0]).split('-')[1][:-1])
+                        # print(flow_idx, flow_idx2)
+                        flow_field_indices.append([flow_idx, flow_idx2])
+                        x_flag = True
+                        if isinstance(x_field, np.ndarray):
+                            flow_field_x = self.append(flow_field_x, x_field)
+                            flow_field_y = self.append(flow_field_y, y_field)
+                            x_field = None
+                            y_field = None
+                else:
+                    row = np.array(np.float64(row))
+                    if x_flag:
+                        x_field = np.vstack((x_field, row)) if isinstance(x_field, np.ndarray) else row
+                    else:
+                        y_field = np.vstack((y_field, row)) if isinstance(y_field, np.ndarray) else row
+                            
+            if isinstance(x_field, np.ndarray):
+                flow_field_x = self.append(flow_field_x, x_field)
+                flow_field_y = self.append(flow_field_y, y_field)
+                x_field = None
+                y_field = None
+        flow_field_x = np.expand_dims(flow_field_x, axis=3)
+        flow_field_y = np.expand_dims(flow_field_y, axis=3)
+        flow_field = np.append(flow_field_x, flow_field_y, axis=3)
+        return flow_field, flow_field_indices
+
+    def read_ib_rds(self, path: str) -> tuple[np.ndarray, list]:
+        bin_frame_indices = []
+        bin_frames = None
+        with open(path, 'r') as file:
+            bin_frame = None
+            csvreader = csv.reader(file)
+            for row in csvreader:
+                if len(row) == 0:
+                    continue
+                if len(row) == 1:
+                    bin_frame_indices.append(int(row[0].removeprefix("Frame ")))
+                    if isinstance(bin_frame, np.ndarray):
+                        bin_frames = self.append(bin_frames, bin_frame)
+                        bin_frame=None
+                else:
+                    row = np.array(np.float64(row))
+                    row = row.astype(int)
+                    if not isinstance(bin_frame, np.ndarray):
+                        bin_frame = row
+                    else:
+                        bin_frame = np.vstack((bin_frame, row))
+            if isinstance(bin_frame, np.ndarray):
+                bin_frames = self.append(bin_frames, bin_frame)
+                bin_frame=None
+        return bin_frames, bin_frame_indices
+
+    def read_field_rds(self, path: str) -> tuple[np.ndarray, list]:
+        field_indices = []
+        fields = []
+        with open(path, 'r') as file:
+            field_frame = None
+            csvreader = csv.reader(file)
+            for row in csvreader:
+                if len(row) == 0:
+                    continue
+                elif len(row) == 1:
+                    if str(row[0]).startswith('Flow Field'):
+                        flow_idx = int(str(row[0]).split('-')[0].split(' ')[2][1:])
+                        flow_idx2 = int(str(row[0]).split('-')[1][:-1])
+                        # print(flow_idx, flow_idx2)
+                        field_indices.append([flow_idx, flow_idx2])
+                    if isinstance(field_frame, np.ndarray):
+                        fields = self.append(fields, field_frame)
+                        field_frame = None
+                else:
+                    row = np.array(np.float64(row))
+                    if not isinstance(field_frame, np.ndarray):
+                        field_frame = row
+                    else:
+                        field_frame = np.vstack((field_frame, row))
+            if isinstance(field_frame, np.ndarray):
+                fields = self.append(fields, field_frame)
+                field_frame =None
+        return fields, field_indices
+
+    def read_id_rds(self, path: str) -> tuple[list, np.ndarray]:
+        frame_nums = []
+        frame_dists = []
+        with open(path, 'r', newline = '\n') as file:
+            csvreader = csv.reader(file)
+            for row in csvreader:
+                if len(row) == 0:
+                    continue
+                if len(row) == 1 and 'Frame' in row[0]:
+                    frame_nums.append(int(row[0].removeprefix('Frame ')))
+                    intensity_values = np.array(next(csvreader))
+                    intensity_values = np.reshape(intensity_values, (intensity_values.shape[0], 1))
+                    
+                    intensity_counts = np.array(next(csvreader))
+                    intensity_counts = np.reshape(intensity_counts, (intensity_counts.shape[0], 1))
+                    
+                    dist = np.append(intensity_values, intensity_counts, axis=1).astype(float)
+                    frame_dists.append(dist)
+        return frame_dists, np.array(frame_nums)
+
+    def read_correlation_rds(self, path: str) -> tuple[list, np.ndarray]:
+        frame_nums = []
+        frame_dists = []
+        correlation_type = 'Structural' if 'StructuralImageAutocorrelation' in path else 'Velocity'
+        def get_frames(frame_str):
+            if correlation_type == 'Structural':
+                return int(frame_str.removeprefix('Frame ').removesuffix(f' {correlation_type} Correlation'))
+            elif correlation_type == 'Velocity':
+                return int(frame_str.split('-')[0].removeprefix('Flow Field '))
+
+        with open(path, 'r', newline = '\n') as file:
+            csvreader = csv.reader(file)
+            for row in csvreader:
+                if len(row) == 0:
+                    continue
+                if len(row) == 1:
+                    frame_nums.append(get_frames(row[0]))
+                    radius = np.array(next(csvreader))[1:]
+                    radius = np.reshape(radius, (radius.shape[0], 1))
+                    
+                    correlations = np.array(next(csvreader))[1:]
+                    correlations = np.reshape(correlations, (correlations.shape[0], 1))
+                    
+                    dist = np.append(radius, correlations, axis=1).astype(float)
+                    frame_dists.append(dist)
+        return frame_dists, np.array(frame_nums)
+
+    @property
+    def frames(self) -> list | np.ndarray:
+        if len(self._frames) == 0 or self.file_path.get() != self._file_path.get():
+            frame_nums = []
+            frame_dists = []
+            filepath = self.file_path.get()
+            if not (os.path.exists(filepath) and filepath.endswith('.csv')):
+                return [None] * 3
+            rds_map = {
+                'BinarizationData': ('Image_Binarization', self.read_ib_rds),
+                'OpticalFlow': ('Optical_Flow', self.read_of_rds),
+                'IntensityDistribution': ('Intensity_Distribution', self.read_id_rds),
+                'StructuralImageAutocorrelation': ('Spatial_Autocorrelation', self.read_correlation_rds),
+                'VelocityCorrelation': ('Velocity_Correlation', self.read_correlation_rds), 
+                'Divergence': ('Vector_Fields', self.read_field_rds),
+                'Curl': ('Vector_Fields', self.read_field_rds),
+            }
+            for key in rds_map.keys():
+                if key in filepath:
+                    branch_name, rds_function = rds_map[key]
+                    self.rds_type.set(branch_name)
+                    rds_results = rds_function(filepath)
+                    self._frames = rds_results[0]
+                    self._indices = rds_results[1]
+                    self._file_path.set(filepath)
+        return self._frames
+
+    @property
+    def indices(self) -> np.ndarray:
+        if len(self._indices) == 0 or self.file_path.get() != self._file_path.get():
+            self.frames()
+        return self._indices

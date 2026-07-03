@@ -1,0 +1,236 @@
+"""
+GUI generation logic for config dataclasses.
+"""
+
+from dataclasses import fields
+import os
+from core.config import *
+
+
+
+def get_tk_var_type(python_type):
+    """Map Python types to tkinter variable types."""
+    mapping = {
+        int: "tk.IntVar",
+        float: "tk.DoubleVar",
+        bool: "tk.BooleanVar",
+        str: "tk.StringVar",
+        List[str]: "List[str]",
+        List[bool]:  "List[bool]",
+        List[np.ndarray]: "List[np.ndarray]",
+        List[int]: "List[int]",
+        np.ndarray: "np.ndarray"
+    }
+    return mapping.get(python_type, "tk.StringVar")
+
+
+def generate_gui_wrapper(config_class):
+    """Generate GUI wrapper for a config class."""
+    class_name = f"{config_class.__name__}GUI"
+
+    lines = [
+        f"@dataclass",
+        f"class {class_name}:",
+        f'    """Auto-generated GUI wrapper for {config_class.__name__}"""',
+        f"    _core_config: {config_class.__name__} = field(default_factory={config_class.__name__})",
+        f"",
+    ]
+
+    # Generate tkinter variable fields
+    for field in fields(config_class):
+        tk_type = get_tk_var_type(field.type)
+        if "List" in tk_type:
+            line = f"    {field.name}: {tk_type} = field(default_factory=list)"
+        elif "np.ndarray" in tk_type:
+            line = f"    {field.name}: {tk_type} = None"
+        else:
+            line = f"    {field.name}: {tk_type} = field(init=False)"
+        lines.append(line)
+
+    # Generate __post_init__
+    lines.extend([f"", f"    def __post_init__(self):",])
+
+    for field in fields(config_class):
+        tk_type = get_tk_var_type(field.type)
+        if "List" in tk_type:
+            line = f"        self.{field.name} = list(self._core_config.{field.name})"
+        elif "np.ndarray" in tk_type:
+            line = f"        self.{field.name}: {tk_type} = None"
+        else:
+            line = f"        self.{field.name} = {tk_type}(value=self._core_config.{field.name})"
+        lines.append(line)
+
+    if "PreviewConfig" in config_class.__name__:
+        with open('gui/configuration_properties/preview_config.txt', 'r') as file:
+            preview_config_lines = file.read().splitlines()
+            lines.extend(preview_config_lines)
+    elif "VisualizationConfig" in config_class.__name__:
+        with open('gui/configuration_properties/visualization_config.txt', 'r') as file:
+            vis_config_lines = file.read().splitlines()
+            lines.extend(vis_config_lines)
+
+    # Generate config property
+    lines.extend(
+        [
+            f"",
+            f"    @property",
+            f"    def config(self) -> {config_class.__name__}:",
+            f'        """Get current config from GUI values"""',
+            f"        return {config_class.__name__}(",
+        ]
+    )
+
+    for field in fields(config_class):
+        tk_type = get_tk_var_type(field.type)
+        if "List" in tk_type:
+            line = f"            {field.name}=self.{field.name},"
+        elif "np.ndarray" in tk_type:
+            line = f"            {field.name}=self.{field.name},"
+        else:
+            line = f"            {field.name}=self.{field.name}.get(),"
+        lines.append(line)
+
+    lines.append(f"        )")
+
+    # Generate update_gui method
+    lines.extend(
+        [
+            f"",
+            f"    def update_gui(self, new_config: {config_class.__name__}):",
+            f'        """Update GUI from new config values"""',
+            f"        self._core_config = new_config",
+        ]
+    )
+
+    for field in fields(config_class):
+        tk_type = get_tk_var_type(field.type)
+        if "np.ndarray" in tk_type:
+            lines.append(f"        self.{field.name} = None")
+        else:
+            lines.append(f"        self.{field.name}.set(new_config.{field.name})")
+
+    return "\n".join(lines)
+
+
+def generate_master_gui_config():
+    """Generate BarcodeConfigGUI."""
+    lines = [
+        "@dataclass",
+        "class BarcodeConfigGUI:",
+        '    """Auto-generated master GUI configuration"""',
+        "    _core_config: BarcodeConfig = field(default_factory=BarcodeConfig)",
+        "",
+    ]
+
+    # Generate GUI subconfig fields
+    for field_name in BarcodeConfig.__dataclass_fields__:
+        config_class = BarcodeConfig.__dataclass_fields__[field_name].default_factory
+        lines.append(f"    {field_name}: {config_class.__name__}GUI = field(init=False)")
+
+    # Generate __post_init__
+    lines.extend(["", "    def __post_init__(self):",])
+
+    for field_name in BarcodeConfig.__dataclass_fields__:
+        config_class = BarcodeConfig.__dataclass_fields__[field_name].default_factory
+        core_config = f"self._core_config.{field_name}"
+        lines.append(f"        self.{field_name} = {config_class.__name__}GUI({core_config})")
+
+    # Generate config property
+    lines.extend(
+        [
+            "",
+            "    @property",
+            "    def config(self) -> BarcodeConfig:",
+            '        """Get current config from all GUI values"""',
+            "        return BarcodeConfig(",
+        ]
+    )
+
+    for field_name in BarcodeConfig.__dataclass_fields__:
+        lines.append(f"            {field_name}=self.{field_name}.config,")
+
+    lines.append("        )")
+
+    """Generate AnalysisConfigGUI."""
+    lines.extend([
+        "@dataclass",
+        "class AnalysisConfigGUI:",
+        '    """Auto-generated master GUI configuration"""',
+        "    _core_config: AnalysisConfig = field(default_factory=AnalysisConfig)",
+        "",
+    ])
+
+    # Generate GUI subconfig fields
+    for field_name in AnalysisConfig.__dataclass_fields__:
+        config_class = AnalysisConfig.__dataclass_fields__[field_name].default_factory
+        lines.append(f"    {field_name}: {config_class.__name__}GUI = field(init=False)")
+
+    # Generate __post_init__
+    lines.extend(["", "    def __post_init__(self):",])
+
+    for field_name in AnalysisConfig.__dataclass_fields__:
+        config_class = AnalysisConfig.__dataclass_fields__[field_name].default_factory
+        core_config = f"self._core_config.{field_name}"
+        lines.append(f"        self.{field_name} = {config_class.__name__}GUI({core_config})")
+
+    # Generate config property
+    lines.extend(
+        [
+            "",
+            "    @property",
+            "    def config(self) -> AnalysisConfig:",
+            '        """Get current config from all GUI values"""',
+            "        return AnalysisConfig(",
+        ]
+    )
+
+    for field_name in AnalysisConfig.__dataclass_fields__:
+        lines.append(f"            {field_name}=self.{field_name}.config,")
+
+    lines.append("        )")
+
+    return "\n".join(lines)
+
+
+def generate_gui_module(config_classes_to_generate):
+    """Generate complete GUI module."""
+    lines = [
+        '"""',
+        "Auto-generated GUI wrappers for config classes",
+        "Generated by: python config.py",
+        '"""',
+        "",
+        "from dataclasses import dataclass, field",
+        "import tkinter as tk",
+        "from core.config import *",
+        "",
+    ]
+
+    # Generate individual GUI classes
+    for config_class in config_classes_to_generate:
+        lines.append(generate_gui_wrapper(config_class))
+        lines.append("")
+
+    # Generate master GUI config
+    lines.append(generate_master_gui_config())
+
+    return "\n".join(lines)
+
+
+def create_gui_configs(config_classes_to_generate, output_dir="gui"):
+    """Create GUI configuration files."""
+    print("🔧 Generating GUI configs...")
+
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Generate GUI module
+    gui_code = generate_gui_module(config_classes_to_generate)
+
+    with open(f"{output_dir}/config.py", "w") as f:
+        f.write(gui_code)
+
+    print(f"✅ Generated GUI configs in {output_dir}/config.py")
+    print(f"📁 Generated {len(config_classes_to_generate)} config GUIs")
+
+    return len(config_classes_to_generate)

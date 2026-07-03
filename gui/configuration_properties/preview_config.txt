@@ -1,0 +1,29 @@
+    
+    @property
+    def sample_preview(self) -> np.ndarray:
+        if self._sample_preview is None or self._sample_file.get() != self.sample_file.get():
+            filepath = self.sample_file.get()
+            if filepath.endswith(('.avi', '.mp4')):
+                frames = []
+                container = av.open(filepath)
+                for frame in container.decode(video=0):
+                    frames.append(frame.to_ndarray(format='gray'))
+                file = np.array(frames)
+                file = np.expand_dims(file, axis = 3) if len(file.shape) == 3 else file
+            elif filepath.endswith(('.tif', '.tiff')):
+                file = iio.imread(filepath)
+                file = np.expand_dims(file, axis = 3) if len(file.shape) == 3 else file
+                if file.shape[3] != min(file.shape):
+                    file = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
+            elif filepath.endswith('.nd2'):
+                with nd2.ND2File(filepath) as ndfile:
+                    if (len(ndfile.sizes) < 5 and (not 'Z' in ndfile.sizes) and 
+                        'T' in ndfile.sizes and len(ndfile.shape) > 2 and ndfile.sizes['T'] > 5):
+                        file = ndfile.asarray()
+                        file = np.expand_dims(file, axis = 1) if len(file.shape) == 3 else file
+                        file = np.swapaxes(np.swapaxes(file, 1, 2), 2, 3)
+            else:
+                file = np.ones((3, 256, 256, 1))
+            self._sample_preview = file
+            self._sample_file.set(filepath)
+        return self._sample_preview
