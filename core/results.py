@@ -282,7 +282,7 @@ class ChannelResults(ResultsBase):
 
     filepath: str
     channel: int
-    total_flags: str = ""
+    total_flags: str = "0"
     dim_channel_flag: int = 0  # 0=normal, 1=dim channel
 
     binarization: BinarizationResults = field(default_factory=BinarizationResults)
@@ -344,16 +344,14 @@ class ChannelResults(ResultsBase):
     def convert_flags(self) -> str:
         flag_lst = []
         if self.dim_channel_flag == 1:
-            flag_lst.append("Channel is dim -- accuracy of screening may be limited")
+            flag_lst.append("1")
         if self.intensity.saturation_flag == 1:
-            flag_lst.append("Video is saturated -- intensity distribution analysis may be limited")
+            flag_lst.append("2")
         if self.binarization.structural_correlation_flag == 1:
-            flag_lst.append("Some frames show correlation length greater than FOV size -- " \
-            "structural correlation length may be inaccurate.")
+            flag_lst.append("3")
         if self.flow.velocity_correlation_flag == 1:
-            flag_lst.append("Some flow fields show correlation length greater than FOV size -- " \
-            "velocity correlation length may be inaccurate.")
-        return ";".join(flag_lst)
+            flag_lst.append("4")
+        return ";".join(flag_lst) if flag_lst else "0"
             
 
     def get_data(self, just_metrics: bool = False) -> List[float]:
@@ -394,12 +392,13 @@ class ChannelResults(ResultsBase):
         binarization_data = self.binarization.get_physical_dict_data()
         intensity_data = self.intensity.get_dict_data()
         flow_data = self.flow.get_dict_data()
+        self.total_flags = self.convert_flags()
         if just_metrics:
             data = binarization_data | intensity_data | flow_data
         else:
             data = {Metrics.FILEPATH: self.filepath,
                     Metrics.CHANNEL: self.channel,
-                    Metrics.FLAGS: self.dim_channel_flag}
+                    Metrics.FLAGS: self.total_flags}
             data = data | binarization_data | intensity_data | flow_data
         return data
     
@@ -422,3 +421,5 @@ def sort_channel_results_by_metric(
             return 0.0  # Default for sorting if metric not found
 
     results.sort(key=lambda r: get_metric_value(r, sort_metric))
+
+
