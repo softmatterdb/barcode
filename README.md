@@ -53,11 +53,11 @@ Each branch also contains a live preview of the output, showing visualizations o
 | Optical Flow | Analyze all chosen videos with the Optical Flow branch |
 | Intensity Distribution | Analyze all chosen videos with the Intensity Distribution branch |
 | **Handling Dim Data** | |
-| Include Dim Files | Run the program on files that are dim (defined as videos where the mean pixel intensity in the first frame is less than $\frac{2}{e}$ times the minimum pixel intensity) -- files meeting this criteria are labeled in the BARCODE CSV file under the Flags section with a numerical label of 1 |
-| Include Dim Channels | Run the program on channels that are dim (defined in "Include Dim Files" setting) -- video channels meeting this criteria are labeled in the BARCODE CSV file under the Flags section (described in "Include Dim Files" setting) |
+| Scan Dim Files | Run the program on files that are dim (defined as videos where the mean pixel intensity in the first frame is less than $\frac{2}{e}$ times the minimum pixel intensity) -- files meeting this criteria are labeled in the BARCODE CSV file under the Flags section with a numerical label of 1 |
+| Scan Dim Channels | Run the program on channels that are dim (defined in "Include Dim Files" setting) -- video channels meeting this criteria are labeled in the BARCODE CSV file under the Flags section (described in "Include Dim Files" setting) |
 | **Output Settings** | 
 | Verbose | Prints more details while running the program to output display, including modules run on videos, time to analyze files, etc. |
-| Save Data Visualizations | Saves representations of binarization, optical flow, and intensity distribution branches as .png files for further analysis |
+| Save Graphs | Saves representations of binarization, optical flow, and intensity distribution branches as .png files for further analysis |
 | Save Reduced Data Structures | Saves reduced data structures used to perform computation of metrics |
 | Generate Dataset Barcode | Save a color "barcode" visualization of the entire dataset; useful for visualizing differences between videos |
 | **Configuration Settings** |
