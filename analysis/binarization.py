@@ -148,7 +148,24 @@ def analyze_binarization(video: np.ndarray, name: str, bin_config: BinarizationC
         max_island_area, max_island_area2, total_island_area, mean_island_area, island_distance, anisotropy = find_island_properties(new_frame, bin_config)
         rad_avg = rad_avg[:correlation_max]
         xvalues = np.arange(len(rad_avg)) * um_pixel_ratio * binning_factor
-        correlation_length = flatten(xvalues[np.argwhere(rad_avg <= np.exp(-1))])[0] if np.argwhere(rad_avg <= np.exp(-1)).any() else np.nan
+        
+        threshold = np.exp(-1)
+        correlation_length = np.nan
+        for i in range(len(rad_avg) - 1):
+
+            if rad_avg[i] > threshold and rad_avg[i+1] <= threshold:
+
+                d1 = abs(rad_avg[i]   - threshold)
+                d2 = abs(rad_avg[i+1] - threshold)
+
+                if d1 < d2:
+                    correlation_length = xvalues[i]
+                else:
+                    correlation_length = xvalues[i+1]
+
+                break
+
+
         if out_config.save_rds:
             write_correlation_rds(scorr_csvwriter, frame_idx, xvalues.tolist(), rad_avg.tolist())
 
