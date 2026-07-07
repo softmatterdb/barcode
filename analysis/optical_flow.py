@@ -63,16 +63,41 @@ def analyze_optical_flow(video: np.ndarray, name: str, flow_config: OpticalFlowC
         direction = np.arctan2(downV, downU)
         flow_field = [downU, downV, direction, speed]
         downsampled_field = np.stack([downU, downV], axis = -1)
-        flow_field_list.append(downsampled_field/np.stack([speed, speed], axis = -1))
+
+        eps = 1e-12
+        valid = speed > eps
+        unit_field = np.zeros_like(downsampled_field)
+        unit_field[valid] = downsampled_field[valid] / speed[valid, None]
+        flow_field_list.append(unit_field)
+
+
         v_correlation, v_rad_avg = velocity_correlation(downsampled_field)
         cumulative_field = np.cumsum(flow_field_list, axis = 0)[-1]
         div_field = divergence(cumulative_field, um_pix_ratio * downsample)
-        curl_field = curl(downsampled_field/np.stack([speed, speed], axis = -1), um_pix_ratio * downsample)
+
+        curl_field = curl(unit_field, um_pix_ratio * downsample)
+
         mean_div = np.nanmean(div_field)
         mean_curl = np.nanmean(curl_field)
         v_rad_avg = v_rad_avg[:correlation_max]
         xvalues = np.arange(len(v_rad_avg)) * um_pix_ratio * downsample
-        correlation_length = flatten(xvalues[np.argwhere(v_rad_avg <= 0.5)])[0] if np.argwhere(v_rad_avg <= 0.5).any() else np.nan
+
+        threshold = 0.5
+        correlation_length = np.nan
+        for i in range(len(v_rad_avg) - 1):
+
+            if v_rad_avg[i] > threshold and v_rad_avg[i + 1] <= threshold:
+
+                d1 = abs(v_rad_avg[i]     - threshold)
+                d2 = abs(v_rad_avg[i + 1] - threshold)
+
+                if d1 < d2:
+                    correlation_length = xvalues[i]
+                else:
+                    correlation_length = xvalues[i + 1]
+
+                break
+
         if out_config.save_rds:
             write_correlation_rds(vcorr_csvwriter, frame_pair, xvalues.tolist(), v_rad_avg.tolist())
             write_divergence_curl_rds(divwriter, frame_pair, div_field)
