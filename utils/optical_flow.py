@@ -20,17 +20,37 @@ def velocity_correlation(flow_field: np.ndarray):
     radial_correlations = velocity_radial_average(correlation_matrix)
     return correlation_matrix, radial_correlations
 
+from scipy.interpolate import griddata
+
+def _fill_invalid(field2d):
+    """Interpolate over nan/inf bins so gradients don't spread bad values to neighbors."""
+    invalid = ~np.isfinite(field2d)
+    if not invalid.any():
+        return field2d, invalid
+    valid = ~invalid
+    yy, xx = np.indices(field2d.shape)
+    filled = field2d.copy()
+    filled[invalid] = griddata(
+        (yy[valid], xx[valid]), field2d[valid],
+        (yy[invalid], xx[invalid]), method='nearest'
+    )
+    return filled, invalid
+
 def divergence(flow_field: np.ndarray, um_pix_ratio: float = 1):
-    fx = flow_field[:,:,0]
-    fy = flow_field[:,:,1]
-    # div(f) = dfx/dx + dfy/dy
-    return np.gradient(fx, um_pix_ratio, axis = 1) + np.gradient(fy, um_pix_ratio, axis = 0)
+    fx, fy = flow_field[:,:,0], flow_field[:,:,1]
+    fx_filled, invalid_x = _fill_invalid(fx)
+    fy_filled, invalid_y = _fill_invalid(fy)
+    div = np.gradient(fx_filled, um_pix_ratio, axis = 1) + np.gradient(fy_filled, um_pix_ratio, axis = 0)
+    div[invalid_x | invalid_y] = np.nan
+    return div
 
 def curl(flow_field: np.ndarray, um_pix_ratio: float = 1):
-    fx = flow_field[:,:,0]
-    fy = flow_field[:,:,1]
-    # curl(f) = dfy/dx - dfx/dy
-    return np.gradient(fy, um_pix_ratio, axis = 1) - np.gradient(fx, um_pix_ratio, axis = 0)
+    fx, fy = flow_field[:,:,0], flow_field[:,:,1]
+    fx_filled, invalid_x = _fill_invalid(fx)
+    fy_filled, invalid_y = _fill_invalid(fy)
+    c = np.gradient(fy_filled, um_pix_ratio, axis = 1) - np.gradient(fx_filled, um_pix_ratio, axis = 0)
+    c[invalid_x | invalid_y] = np.nan
+    return c
 
 def velocity_radial_average(frame):
     nx, ny = frame.shape
