@@ -1,4 +1,5 @@
 import os
+import numpy
 from typing import Tuple, Optional
 from itertools import pairwise, combinations
 import matplotlib.pyplot as plt
