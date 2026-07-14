@@ -24,9 +24,6 @@ class UnitsNum(ABC):
             self.name = val
         raise AttributeError
 
-
-#test
-
 class Metrics(Enum):
     """Enum for different metrics used in analysis."""
 
