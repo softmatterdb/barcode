@@ -239,4 +239,3 @@ def analyze_binarization(video: np.ndarray, name: str, bin_config: BinarizationC
     )
 
     return fig, results
-#test
