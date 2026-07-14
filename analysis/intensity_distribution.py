@@ -52,7 +52,7 @@ def analyze_intensity_distribution(video: np.ndarray, name: str, id_config: Inte
     median_skew_diff = np.nanmean(median_skewness_list[-num_frames_analysis:]) - np.nanmean(median_skewness_list[:num_frames_analysis])
     mode_skew_diff = np.nanmean(mode_skewness_list[-num_frames_analysis:]) - np.nanmean(mode_skewness_list[:num_frames_analysis])
 
-    #testcommentkernel
+    #div_test
 
     fig = None
     if out_config.save_visualizations:
